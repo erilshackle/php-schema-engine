@@ -1,0 +1,36 @@
+{
+    "name": "eril/schema-engine",
+    "description": "Schema-first database migration engine for PHP.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "erilshackle",
+            "email": "erilandocarvalho@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "SchemaEngine\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SchemaEngine\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "friendsofphp/php-cs-fixer": "^3.0"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "fix": "php-cs-fixer fix"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
