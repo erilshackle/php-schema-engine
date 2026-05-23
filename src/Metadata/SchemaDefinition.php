@@ -27,6 +27,7 @@ class SchemaDefinition
         return isset($this->tables[$name]);
     }
 
+
     public function toArray(): array
     {
         return [

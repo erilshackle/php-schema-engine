@@ -4,6 +4,7 @@ namespace SchemaEngine\SQL\Grammar;
 
 use RuntimeException;
 use SchemaEngine\Metadata\ColumnDefinition;
+use SchemaEngine\Metadata\ForeignKeyDefinition;
 use SchemaEngine\Metadata\TableDefinition;
 use SchemaEngine\Metadata\IndexDefinition;
 use SchemaEngine\Operations\Column\RenameColumn;
@@ -55,11 +56,11 @@ class MySQLGrammar
                 $operation
             ),
 
-            $operation instanceof AddIndex =>
-            $this->compileAddIndex($operation),
+            // $operation instanceof AddIndex =>
+            // $this->compileAddIndex($operation),
 
-            $operation instanceof DropIndex =>
-            $this->compileDropIndex($operation),
+            // $operation instanceof DropIndex =>
+            // $this->compileDropIndex($operation),
 
             default => throw new RuntimeException(
                 'Unsupported operation: '
@@ -164,6 +165,35 @@ class MySQLGrammar
         return "KEY `{$index->name}` ({$columns})";
     }
 
+    protected function compileForeignKey(
+        ForeignKeyDefinition $foreignKey
+    ): string {
+
+        $columns = implode(', ', array_map(
+            fn($column) => "`{$column}`",
+            $foreignKey->columns
+        ));
+
+        $referencedColumns = implode(', ', array_map(
+            fn($column) => "`{$column}`",
+            $foreignKey->referencedColumns
+        ));
+
+        $sql = "CONSTRAINT `{$foreignKey->name}` ";
+        $sql .= "FOREIGN KEY ({$columns}) ";
+        $sql .= "REFERENCES `{$foreignKey->referencedTable}` ({$referencedColumns})";
+
+        if ($foreignKey->onDelete) {
+            $sql .= " ON DELETE {$foreignKey->onDelete}";
+        }
+
+        if ($foreignKey->onUpdate) {
+            $sql .= " ON UPDATE {$foreignKey->onUpdate}";
+        }
+
+        return $sql;
+    }
+
     protected function compileCreateTable(
         CreateTable $operation
     ): string {
@@ -172,20 +202,22 @@ class MySQLGrammar
 
         $columns = [];
 
-        $indexes = [];
-
         foreach ($table->columns as $column) {
-
             $columns[] = $this->compileColumn($column);
         }
 
-        foreach ($table->indexes as $index) {
-            $indexes[] = $this->compileIndex($index);
-        }
+        $indexes = $this->compileIndexes(
+            $table->indexes
+        );
+
+        $foreignKeys = $this->compileForeignKeys(
+            $table->foreignKeys
+        );
 
         $definitions = array_merge(
             $columns,
-            $indexes
+            $indexes,
+            $foreignKeys
         );
 
         $columnsSql = implode(",\n", $definitions);
@@ -285,35 +317,70 @@ class MySQLGrammar
         return (string) $value;
     }
 
-    protected function compileAddIndex(
-        AddIndex $operation
-    ): string {
+    protected function compileForeignKeys(
+        array $foreignKeys
+    ): array {
 
-        $index =
-            $this->compileIndex(
-                $operation->index
-            );
+        $sql = [];
 
-        return "
-        ALTER TABLE `{$operation->table}`
-        ADD {$index}
-        ";
-    }
-
-    protected function compileDropIndex(
-        DropIndex $operation
-    ): string {
-
-        if ($operation->name === 'primary') {
-            return "
-            ALTER TABLE `{$operation->table}`
-            DROP PRIMARY KEY `{$operation->name}`
-            ";
+        foreach ($foreignKeys as $foreignKey) {
+            $sql[] = $this->compileForeignKey($foreignKey);
         }
 
-        return "
-        ALTER TABLE `{$operation->table}`
-        DROP INDEX `{$operation->name}`
-        ";
+        return $sql;
     }
+
+
+    /**
+     * Summary of compileIndexes
+     * @param array $indexes
+     * @return string[]
+     * @deprec v1
+     */
+    protected function compileIndexes(
+        array $indexes
+    ): array {
+
+        $sql = [];
+
+        foreach ($indexes as $index) {
+            $sql[] = $this->compileIndex($index);
+        }
+
+        return $sql;
+    }
+
+
+
+    // protected function compileAddIndex(
+    //     AddIndex $operation
+    // ): string {
+
+    //     $index =
+    //         $this->compileIndex(
+    //             $operation->index
+    //         );
+
+    //     return "
+    //     ALTER TABLE `{$operation->table}`
+    //     ADD {$index}
+    //     ";
+    // }
+
+    // protected function compileDropIndex(
+    //     DropIndex $operation
+    // ): string {
+
+    //     if ($operation->name === 'primary') {
+    //         return "
+    //         ALTER TABLE `{$operation->table}`
+    //         DROP PRIMARY KEY `{$operation->name}`
+    //         ";
+    //     }
+
+    //     return "
+    //     ALTER TABLE `{$operation->table}`
+    //     DROP INDEX `{$operation->name}`
+    //     ";
+    // }
 }

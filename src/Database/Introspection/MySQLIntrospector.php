@@ -7,6 +7,7 @@ use SchemaEngine\Metadata\ColumnDefinition;
 use SchemaEngine\Metadata\SchemaDefinition;
 use SchemaEngine\Metadata\TableDefinition;
 use SchemaEngine\Database\Normalization\TypeNormalizer;
+use SchemaEngine\Metadata\ForeignKeyDefinition;
 
 class MySQLIntrospector
 {
@@ -14,6 +15,7 @@ class MySQLIntrospector
     protected TypeNormalizer $normalizer;
 
     protected array $indexBuffer = [];
+    protected array $foreignKeyBuffer = [];
 
     public function __construct(
         protected PDO $pdo,
@@ -24,9 +26,19 @@ class MySQLIntrospector
             $normalizer ?? new TypeNormalizer();
     }
 
+    protected function database(): string
+    {
+        return $this->database ?? $this->pdo->query(
+            'SELECT DATABASE()'
+        )->fetchColumn();
+    }
+
     public function getSchema(): SchemaDefinition
     {
         $schema = new SchemaDefinition();
+
+        $this->indexBuffer = [];
+        $this->foreignKeyBuffer = [];
 
         $tables = [];
 
@@ -45,20 +57,23 @@ class MySQLIntrospector
         }
 
         // indexes (NOVO BLOCO)
-        // foreach ($this->getIndexes() as $indexData) {
-
-        //     $table = $tables[$indexData['TABLE_NAME']];
-        //     $table->addRawIndexRow($indexData);
-        // }
-
         foreach ($this->getIndexes() as $indexData) {
-
             $this->indexBuffer[] = $indexData;
         }
 
         $this->hydrateIndexes($tables);
+
+        // foreign keys
+        foreach ($this->getForeignKeys() as $foreignKeyData) {
+            $this->foreignKeyBuffer[] = $foreignKeyData;
+        }
+
+        $this->hydrateForeignKeys($tables);
+
+
         return $schema;
     }
+
 
     protected function getTables(): array
     {
@@ -66,7 +81,11 @@ class MySQLIntrospector
         SELECT TABLE_NAME
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA = DATABASE()
-    ");
+        ");
+
+        $stmt->execute([
+            $this->database()
+        ]);
 
         return $stmt->fetchAll(
             PDO::FETCH_COLUMN
@@ -90,7 +109,11 @@ class MySQLIntrospector
             CHARACTER_MAXIMUM_LENGTH
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = DATABASE()
-    ");
+        ");
+
+        $stmt->execute([
+            $this->database()
+        ]);
 
         return $stmt->fetchAll(
             PDO::FETCH_ASSOC
@@ -110,22 +133,62 @@ class MySQLIntrospector
         ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX
     ");
 
+        $stmt->execute([
+            $this->database()
+        ]);
+
         return $stmt->fetchAll(
             PDO::FETCH_ASSOC
         );
     }
 
-    protected function getStatistics(): array
+    protected function getForeignKeys(): array
     {
-        $stmt = $this->pdo->query("
-        SELECT *
-        FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE TABLE_SCHEMA = DATABASE()
+        $stmt = $this->pdo->prepare("
+        SELECT
+            kcu.TABLE_NAME,
+            kcu.CONSTRAINT_NAME,
+            kcu.COLUMN_NAME,
+            kcu.REFERENCED_TABLE_NAME,
+            kcu.REFERENCED_COLUMN_NAME,
+            rc.UPDATE_RULE,
+            rc.DELETE_RULE,
+            kcu.ORDINAL_POSITION
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+        LEFT JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+            ON rc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
+            AND rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+            AND rc.TABLE_NAME = kcu.TABLE_NAME
+        WHERE kcu.TABLE_SCHEMA = ?
+            AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+        ORDER BY kcu.TABLE_NAME, kcu.CONSTRAINT_NAME, kcu.ORDINAL_POSITION
     ");
 
-        return $stmt->fetchAll(
-            PDO::FETCH_ASSOC
-        );
+        $stmt->execute([
+            $this->database()
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    protected function normalizeForeignAction(
+        ?string $action
+    ): ?string {
+
+        if ($action === null) {
+            return null;
+        }
+
+        $action = strtoupper($action);
+
+        return match ($action) {
+            'RESTRICT',
+            'CASCADE',
+            'SET NULL',
+            'NO ACTION' => $action,
+
+            default => $action,
+        };
     }
 
 
@@ -148,7 +211,9 @@ class MySQLIntrospector
 
 
         $column->default =
-            $data['COLUMN_DEFAULT'];
+            $data['COLUMN_DEFAULT'] !== null
+            ? $data['COLUMN_DEFAULT']
+            : null;
 
         $column->autoIncrement =
             str_contains(
@@ -183,14 +248,21 @@ class MySQLIntrospector
             $table = $row['TABLE_NAME'];
             $index = $row['INDEX_NAME'];
 
-            $grouped[$table][$index]['columns'][] =
-                $row['COLUMN_NAME'];
+            $grouped[$table][$index] ??= [
+                'columns' => [],
+                'unique' => !$row['NON_UNIQUE'],
+                'primary' => $index === 'PRIMARY',
+            ];
 
-            $grouped[$table][$index]['unique'] =
-                !$row['NON_UNIQUE'];
+            $grouped[$table][$index]['columns'][] = $row['COLUMN_NAME'];
 
-            $grouped[$table][$index]['primary'] =
-                $index === 'PRIMARY';
+            if (!isset($grouped[$table][$index]['unique'])) {
+                $grouped[$table][$index]['unique'] = !$row['NON_UNIQUE'];
+            }
+
+            if (!isset($grouped[$table][$index]['primary'])) {
+                $grouped[$table][$index]['primary'] = $index === 'PRIMARY';
+            }
         }
 
         foreach ($grouped as $tableName => $indexes) {
@@ -205,6 +277,68 @@ class MySQLIntrospector
                     'unique' => $data['unique'] ?? false,
                     'primary' => $data['primary'] ?? false,
                 ]);
+            }
+        }
+    }
+
+    protected function hydrateForeignKeys(
+        array $tables
+    ): void {
+
+        $grouped = [];
+
+        foreach ($this->foreignKeyBuffer as $row) {
+
+            $table = $row['TABLE_NAME'];
+            $name = $row['CONSTRAINT_NAME'];
+
+            $grouped[$table][$name] ??= [
+                'columns' => [],
+                'referencedTable' => $row['REFERENCED_TABLE_NAME'],
+                'referencedColumns' => [],
+                'onDelete' => $this->normalizeForeignAction(
+                    $row['DELETE_RULE'] ?? null
+                ),
+                'onUpdate' => $this->normalizeForeignAction(
+                    $row['UPDATE_RULE'] ?? null
+                ),
+            ];
+
+            $grouped[$table][$name]['columns'][] =
+                $row['COLUMN_NAME'];
+
+            $grouped[$table][$name]['referencedColumns'][] =
+                $row['REFERENCED_COLUMN_NAME'];
+        }
+
+        foreach ($grouped as $tableName => $foreignKeys) {
+
+            if (!isset($tables[$tableName])) {
+                continue;
+            }
+
+            $table = $tables[$tableName];
+
+            foreach ($foreignKeys as $name => $data) {
+
+                $foreignKey = new ForeignKeyDefinition(
+                    $name,
+                    $data['columns']
+                );
+
+                $foreignKey->referencedTable =
+                    $data['referencedTable'];
+
+                $foreignKey->referencedColumns =
+                    $data['referencedColumns'];
+
+                $foreignKey->onDelete =
+                    $data['onDelete'];
+
+                $foreignKey->onUpdate =
+                    $data['onUpdate'];
+
+                $table->addForeignKey($foreignKey);
             }
         }
     }

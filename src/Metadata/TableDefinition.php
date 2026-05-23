@@ -6,6 +6,7 @@ class TableDefinition
 {
     public string $name;
     public array $indexes = [];
+    public array $foreignKeys = [];
 
 
     /**
@@ -22,20 +23,28 @@ class TableDefinition
         ColumnDefinition $column
     ): void {
         $this->columns[$column->name] = $column;
+        $this->hydrateColumnMetadata($column);
     }
 
     public function addIndex(
         IndexDefinition $index
     ): void {
 
-        $this->indexes[$index->name] =
-            $index;
+        $this->indexes[$index->name] = $index;
     }
 
     public function getColumn(
         string $name
     ): ?ColumnDefinition {
         return $this->columns[$name] ?? null;
+    }
+
+    public function getIndex(
+        string $name
+    ): ?IndexDefinition {
+
+        return $this->indexes[$name]
+            ?? null;
     }
 
     public function hasColumn(
@@ -52,6 +61,62 @@ class TableDefinition
             $this->indexes[$name]
         );
     }
+
+
+    public function addForeignKey(
+        ForeignKeyDefinition $foreignKey
+    ): void {
+
+        $this->foreignKeys[$foreignKey->name] = $foreignKey;
+    }
+
+    public function addIndexFromArray(array $data): void
+    {
+        $index = IndexDefinition::fromArray($data);
+
+        $this->addIndex($index);
+    }
+
+
+    protected function hydrateColumnMetadata(
+        ColumnDefinition $column
+    ): void {
+
+        if ($column->meta['primary'] ?? false) {
+
+            $index = new IndexDefinition(
+                'primary',
+                [$column->name]
+            );
+
+            $index->primary = true;
+
+            $this->addIndex($index);
+        }
+
+        if ($column->meta['unique'] ?? false) {
+
+            $index = new IndexDefinition(
+                "{$column->name}_unique",
+                [$column->name]
+            );
+
+            $index->unique = true;
+
+            $this->addIndex($index);
+        }
+
+        if ($column->meta['index'] ?? false) {
+
+            $index = new IndexDefinition(
+                "{$column->name}_index",
+                [$column->name]
+            );
+
+            $this->addIndex($index);
+        }
+    }
+
 
     public function toArray(): array
     {

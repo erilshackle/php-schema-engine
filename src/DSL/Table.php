@@ -24,7 +24,8 @@ class Table
 
         $column = new Column(
             $name,
-            $type
+            $type,
+            $this->definition
         );
 
         $this->definition->addColumn(
@@ -35,15 +36,12 @@ class Table
     }
 
     public function id(
-        string $name = 'id',
-        bool $long = true
+        string $name = 'id'
     ): Column {
 
-        $column = $long ? $this->bigInt($name) : $this->int($name);
-        $column->autoIncrement();
-        $this->primary($name);
-
-        return $column;
+        return $this->bigInt($name)
+            ->autoIncrement()
+            ->primary();
     }
 
     public function string(
@@ -130,16 +128,10 @@ class Table
     public function text(
         string $name
     ): Column {
-        $column = new Column(
+        return $this->addColumn(
             $name,
             'text'
         );
-
-        $this->definition->addColumn(
-            $column->toDefinition()
-        );
-
-        return $column;
     }
 
     public function uuid(
@@ -240,6 +232,21 @@ class Table
         $this->text('remember_token')
             ->nullable()
             ->default(null);
+    }
+
+    public function foreignId(
+        string $name,
+        ?string $references = null
+    ): Column {
+
+        $field = $this->bigInt($name)
+            ->index();
+
+        if ($references) {
+            $field->foreign($references);
+        }
+
+        return $field;
     }
 
 

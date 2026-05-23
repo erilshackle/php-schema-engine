@@ -20,6 +20,8 @@ class ColumnDefinition
 
     public ?int $scale = null;
 
+    public array $meta = [];
+
     public function __construct(
         string $name,
         string $type
@@ -39,6 +41,7 @@ class ColumnDefinition
             'length' => $this->length,
             'precision' => $this->precision,
             'scale' => $this->scale,
+            'meta' => $this->meta,
         ];
     }
 
@@ -68,6 +71,9 @@ class ColumnDefinition
 
         $column->scale =
             $data['scale'];
+
+            $column->meta =
+    $data['meta'] ?? [];
 
         return $column;
     }

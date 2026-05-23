@@ -7,6 +7,8 @@ use SchemaEngine\Operations\Column\AddColumn;
 use SchemaEngine\Operations\Column\DropColumn;
 use SchemaEngine\Operations\Column\ModifyColumn;
 use SchemaEngine\Operations\Column\RenameColumn;
+use SchemaEngine\Operations\Index\AddIndex;
+use SchemaEngine\Operations\Index\DropIndex;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
@@ -164,7 +166,6 @@ class SchemaDiffer
 
         return $operations;
     }
-
 
     protected function detectRenamedColumns(
         $currentTable,
