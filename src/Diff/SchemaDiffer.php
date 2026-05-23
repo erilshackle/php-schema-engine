@@ -13,14 +13,16 @@ use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
 
+
 class SchemaDiffer
 {
     protected ColumnComparator $comparator;
+    protected DiffReport $report;
 
     public function __construct()
     {
-        $this->comparator =
-            new ColumnComparator();
+        $this->comparator = new ColumnComparator();
+        $this->report = new DiffReport();
     }
 
     /**
@@ -48,10 +50,21 @@ class SchemaDiffer
         return $operations;
     }
 
+    public function report(): DiffReport
+    {
+        return $this->report;
+    }
+
     protected function diffTables(
         SchemaDefinition $current,
         SchemaDefinition $desired
     ): array {
+
+        $this->report?->warn(
+            'V1 does not automatically migrate index or foreign key changes after table creation. 
+            Indexes and foreign keys are generated for new tables only.'
+
+        );
 
         $operations = [];
 
@@ -96,17 +109,17 @@ class SchemaDiffer
                 continue;
             }
 
-            $renameData =  $this->detectRenamedColumns(
-                $currentTable,
-                $desiredTable,
-                $tableName
-            );
+            // $renameData =  $this->detectRenamedColumns(
+            //     $currentTable,
+            //     $desiredTable,
+            //     $tableName
+            // );
 
-            $operations = array_merge($operations, $renameData['operations']);
+            // $operations = array_merge($operations, $renameData['operations']);
 
-            $usedCurrent = $renameData['usedCurrent'];
+            $usedCurrent = $renameData['usedCurrent'] ?? [];
 
-            $usedDesired = $renameData['usedDesired'];
+            $usedDesired = $renameData['usedDesired'] ?? [];
 
             // colunas novas/modificadas
             foreach ($desiredTable->columns as $columnName => $desiredColumn) {

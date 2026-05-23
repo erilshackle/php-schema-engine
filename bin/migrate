@@ -1,0 +1,132 @@
+#!/usr/bin/env php
+<?php
+
+require 'vendor/autoload.php';
+
+use SchemaEngine\Database\ConnectionFactory;
+use SchemaEngine\Database\Introspection\MySQLIntrospector;
+use SchemaEngine\Execution\MigrationRepository;
+use SchemaEngine\Execution\Migrator;
+use SchemaEngine\Diff\SchemaDiffer;
+use SchemaEngine\Loader\SchemaLoader;
+use SchemaEngine\Snapshot\SnapshotManager;
+
+
+$options = getopt('', [
+    'dry-run',
+    'force',
+    'yes',
+    'status',
+]);
+
+$dryRun = isset($options['dry-run']);
+$force = isset($options['force']);
+$yes = isset($options['yes']);
+$status = isset($options['status']);
+
+$config = require __DIR__     . '/../config/database.php';
+
+$pdo = ConnectionFactory::make($config);
+
+$repository = new MigrationRepository($pdo);
+
+$loader = new SchemaLoader();
+
+$desired = $loader->load(
+    __DIR__ . '/../database/schema.php'
+);
+
+$introspector = new MySQLIntrospector(
+    $pdo
+);
+
+if ($status) {
+    $rows = $repository->all();
+
+    if (empty($rows)) {
+        echo "No migrations executed yet.\n";
+        exit(0);
+    }
+
+    foreach ($rows as $row) {
+        echo "[Batch {$row['batch']}] {$row['migration']} - {$row['executed_at']}\n";
+    }
+
+    exit(0);
+}
+
+$current = $introspector->getSchema();
+
+$differ = new SchemaDiffer();
+
+$operations = $differ->diff(
+    $current,
+    $desired
+);
+
+$report = $differ->report();
+
+if ($report->hasWarnings()) {
+
+    echo "\nWarnings:\n\n";
+
+    foreach ($report->warnings as $warning) {
+        echo "- {$warning}\n";
+    }
+
+    echo "\n";
+}
+
+if (empty($operations)) {
+
+    echo "Database is up to date.\n";
+
+    exit(0);
+}
+
+$migrator = new Migrator($pdo);
+
+$preview = $migrator->run(
+    $operations,
+    dryRun: $dryRun,
+    force: $force
+);
+
+echo "\nPlanned SQL:\n\n";
+
+foreach ($preview as $sql) {
+    echo $sql . "\n\n";
+}
+
+if ($dryRun) {
+    exit(0);
+}
+
+if (!$yes) {
+
+    echo "Apply changes? [y/N]: ";
+
+    $confirm = trim(
+        strtolower(fgets(STDIN))
+    );
+
+    if ($confirm !== 'y') {
+        echo "Migration cancelled.\n";
+        exit(0);
+    }
+}
+
+$snapshots = new SnapshotManager();
+
+$snapshots->save(
+    $desired,
+    __DIR__ . '/../storage/schema.snapshot.json'
+);
+
+$migrator->run(
+    $operations,
+    dryRun: false,
+    force: $force
+);
+
+echo "Migration completed.\n";

@@ -3,6 +3,7 @@
 namespace SchemaEngine\Diff;
 
 use SchemaEngine\Metadata\ColumnDefinition;
+use SchemaEngine\SQL\Expression\Expression;
 
 class ColumnComparator
 {
@@ -12,30 +13,83 @@ class ColumnComparator
     ): bool {
 
         return (
-            $a->type === $b->type
+            $this->normalizeType($a->type) === $this->normalizeType($b->type)
             && $a->nullable === $b->nullable
-            // && $a->primary === $b->primary
-            // && $a->unique === $b->unique
             && $a->autoIncrement === $b->autoIncrement
-
             && $this->normalizeDefault($a->default)
-            ===
-            $this->normalizeDefault($b->default)
-
-            && $a->length === $b->length
-            && $a->precision === $b->precision
-            && $a->scale === $b->scale
+                === $this->normalizeDefault($b->default)
+            && $this->normalizeLength($a) === $this->normalizeLength($b)
+            && $this->normalizePrecision($a) === $this->normalizePrecision($b)
+            && $this->normalizeScale($a) === $this->normalizeScale($b)
         );
+    }
+
+    protected function normalizeType(
+        string $type
+    ): string {
+        return strtolower($type);
     }
 
     protected function normalizeDefault(
         mixed $value
     ): mixed {
 
+        if ($value instanceof Expression) {
+            $value = $value->getValue();
+        }
+
+        if (is_string($value)) {
+            $value = trim(strtolower($value));
+
+            if ($value === 'current_timestamp()') {
+                return 'current_timestamp';
+            }
+
+            if ($value === 'null') {
+                return null;
+            }
+        }
+
         if (is_numeric($value)) {
             return $value + 0;
         }
 
         return $value;
+    }
+
+    protected function normalizeLength(
+        ColumnDefinition $column
+    ): ?int {
+
+        if (!in_array($column->type, [
+            'varchar',
+            'char',
+        ], true)) {
+            return null;
+        }
+
+        return $column->length;
+    }
+
+    protected function normalizePrecision(
+        ColumnDefinition $column
+    ): ?int {
+
+        if ($column->type !== 'decimal') {
+            return null;
+        }
+
+        return $column->precision;
+    }
+
+    protected function normalizeScale(
+        ColumnDefinition $column
+    ): ?int {
+
+        if ($column->type !== 'decimal') {
+            return null;
+        }
+
+        return $column->scale;
     }
 }

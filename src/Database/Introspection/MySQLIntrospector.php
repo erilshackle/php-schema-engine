@@ -13,6 +13,9 @@ class MySQLIntrospector
 {
 
     protected TypeNormalizer $normalizer;
+    protected array $ignoredTables = [
+        'schema_migrations',
+    ];
 
     protected array $indexBuffer = [];
     protected array $foreignKeyBuffer = [];
@@ -33,6 +36,16 @@ class MySQLIntrospector
         )->fetchColumn();
     }
 
+    protected function isIgnoredTable(
+        string $table
+    ): bool {
+        return in_array(
+            $table,
+            $this->ignoredTables,
+            true
+        );
+    }
+
     public function getSchema(): SchemaDefinition
     {
         $schema = new SchemaDefinition();
@@ -51,6 +64,10 @@ class MySQLIntrospector
         // columns
         foreach ($this->getColumns() as $columnData) {
 
+            if ($this->isIgnoredTable($columnData['TABLE_NAME'])) {
+                continue;
+            }
+
             $table = $tables[$columnData['TABLE_NAME']];
             $column = $this->makeColumn($columnData);
             $table->addColumn($column);
@@ -58,6 +75,9 @@ class MySQLIntrospector
 
         // indexes (NOVO BLOCO)
         foreach ($this->getIndexes() as $indexData) {
+            if ($this->isIgnoredTable($columnData['TABLE_NAME'])) {
+                continue;
+            }
             $this->indexBuffer[] = $indexData;
         }
 
@@ -65,6 +85,9 @@ class MySQLIntrospector
 
         // foreign keys
         foreach ($this->getForeignKeys() as $foreignKeyData) {
+            if ($this->isIgnoredTable($columnData['TABLE_NAME'])) {
+                continue;
+            }
             $this->foreignKeyBuffer[] = $foreignKeyData;
         }
 
@@ -77,24 +100,29 @@ class MySQLIntrospector
 
     protected function getTables(): array
     {
-        $stmt = $this->pdo->query("
+        $stmt = $this->pdo->prepare("
         SELECT TABLE_NAME
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = DATABASE()
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_SCHEMA = ?
         ");
 
         $stmt->execute([
             $this->database()
         ]);
 
-        return $stmt->fetchAll(
-            PDO::FETCH_COLUMN
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        return array_values(
+            array_filter(
+                $tables,
+                fn($table) => !$this->isIgnoredTable($table)
+            )
         );
     }
 
     protected function getColumns(): array
     {
-        $stmt = $this->pdo->query("
+        $stmt = $this->pdo->prepare("
         SELECT
             TABLE_NAME,
             COLUMN_NAME,
@@ -108,7 +136,7 @@ class MySQLIntrospector
             NUMERIC_SCALE,
             CHARACTER_MAXIMUM_LENGTH
         FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE()
+        WHERE TABLE_SCHEMA = ?
         ");
 
         $stmt->execute([
@@ -122,14 +150,14 @@ class MySQLIntrospector
 
     protected function getIndexes(): array
     {
-        $stmt = $this->pdo->query("
+        $stmt = $this->pdo->prepare("
         SELECT
             TABLE_NAME,
             INDEX_NAME,
             COLUMN_NAME,
             NON_UNIQUE
         FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE TABLE_SCHEMA = DATABASE()
+        WHERE TABLE_SCHEMA = ?
         ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX
     ");
 
@@ -266,6 +294,10 @@ class MySQLIntrospector
         }
 
         foreach ($grouped as $tableName => $indexes) {
+
+            if (!isset($tables[$tableName])) {
+                continue;
+            }
 
             $table = $tables[$tableName];
 

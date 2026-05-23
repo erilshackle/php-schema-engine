@@ -1,15 +1,29 @@
 <?php
 
-return function (SchemaEngine\DSL\Schema $schema) {
+use SchemaEngine\SQL\DB;
 
-    $schema->table('users', function (SchemaEngine\DSL\Table $t) {
+return function ($schema) {
+
+    $schema->table('users', function ($t) {
         $t->id();
+
         $t->string('name');
         $t->string('email')->unique();
-        $t->int('age')->default(1);
-        $t->datetime('last_activity');
+
         $t->timestamps();
     });
 
-    $schema->table("products", function (SchemaEngine\DSL\Table $t) {});
+    $schema->table('posts', function ($t) {
+        $t->id();
+
+        $t->foreignId('user_id')
+            ->constrained()
+            ->cascadeOnDelete();
+
+        $t->string('title');
+        $t->text('body');
+
+        $t->timestamps();
+        $t->softDeletes();
+    });
 };

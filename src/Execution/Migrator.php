@@ -3,7 +3,6 @@
 namespace SchemaEngine\Execution;
 
 use PDO;
-use Throwable;
 use RuntimeException;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\DropTable;
@@ -13,13 +12,17 @@ use SchemaEngine\SQL\SQLGenerator;
 class Migrator
 {
     protected SQLGenerator $generator;
+    protected MigrationRepository $repository;
 
     public function __construct(
         protected PDO $pdo,
-        ?SQLGenerator $generator = null
+        ?SQLGenerator $generator = null,
+        ?MigrationRepository $repository = null
     ) {
         $this->generator =
             $generator ?? new SQLGenerator();
+
+        $this->repository = $repository ?? new MigrationRepository($pdo);
     }
 
     /**
@@ -40,9 +43,8 @@ class Migrator
                 $force
             );
 
-            $sql =
-                $this->generator
-                    ->generate($operation);
+            $sql = $this->generator
+                ->generate($operation);
 
             $sqlList[] = $sql;
         }
@@ -51,24 +53,16 @@ class Migrator
             return $sqlList;
         }
 
-        try {
+        $batch = $this->repository->nextBatch();
 
-            $this->pdo->beginTransaction();
+        foreach ($sqlList as $index => $sql) {
 
-            foreach ($sqlList as $sql) {
+            $this->pdo->exec($sql);
 
-                $this->pdo->exec($sql);
-            }
-
-            $this->pdo->commit();
-
-        } catch (Throwable $e) {
-
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-
-            throw $e;
+            $this->repository->log(
+                get_class($operations[$index]),
+                $batch
+            );
         }
 
         return $sqlList;

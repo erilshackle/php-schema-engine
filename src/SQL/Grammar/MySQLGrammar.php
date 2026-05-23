@@ -77,9 +77,9 @@ class MySQLGrammar
 
         $sql .= $this->compileType($column);
 
-        if (!$column->nullable) {
-            $sql .= ' NOT NULL';
-        }
+        $sql .= $column->nullable
+            ? ' NULL'
+            : ' NOT NULL';
 
         if ($column->default !== null) {
 
@@ -223,12 +223,12 @@ class MySQLGrammar
         $columnsSql = implode(",\n", $definitions);
 
         return "
-        CREATE TABLE `{$table->name}` (
-        {$columnsSql}
-        )
-        ENGINE=InnoDB
-        DEFAULT CHARSET=utf8mb4
-        ";
+CREATE TABLE `{$table->name}` (
+{$columnsSql}
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+";
     }
 
     protected function compileAddColumn(
@@ -240,9 +240,9 @@ class MySQLGrammar
         );
 
         return "
-        ALTER TABLE `{$operation->table}`
-        ADD COLUMN {$column}
-        ";
+ALTER TABLE `{$operation->table}`
+ADD COLUMN {$column}
+";
     }
 
 
@@ -255,9 +255,9 @@ class MySQLGrammar
         );
 
         return "
-        ALTER TABLE `{$operation->table}`
-        MODIFY COLUMN {$column}
-        ";
+ALTER TABLE `{$operation->table}`
+MODIFY COLUMN {$column}
+";
     }
 
     protected function compileRenameColumn(
@@ -265,10 +265,10 @@ class MySQLGrammar
     ): string {
 
         return "
-        ALTER TABLE `{$operation->table}`
-        RENAME COLUMN `{$operation->from}`
-        TO `{$operation->to}`
-        ";
+ALTER TABLE `{$operation->table}`
+RENAME COLUMN `{$operation->from}`
+TO `{$operation->to}`
+";
     }
 
     protected function compileDropColumn(
@@ -276,9 +276,9 @@ class MySQLGrammar
     ): string {
 
         return "
-        ALTER TABLE `{$operation->table}`
-        DROP COLUMN `{$operation->column}`
-        ";
+ALTER TABLE `{$operation->table}`
+DROP COLUMN `{$operation->column}`
+";
     }
 
     protected function compileDropTable(
@@ -286,8 +286,8 @@ class MySQLGrammar
     ): string {
 
         return "
-        DROP TABLE `{$operation->table}`
-        ";
+DROP TABLE `{$operation->table}`
+";
     }
 
     protected function compileDefault(
