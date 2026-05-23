@@ -26,7 +26,7 @@ class SchemaLoaderTest extends TestCase
         $email = $users->getColumn('email');
 
         $this->assertTrue(
-            $email->unique
+            $email->meta['unique']
         );
     }
 }

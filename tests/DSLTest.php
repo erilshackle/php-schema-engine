@@ -39,7 +39,7 @@ class DSLTest extends TestCase
         $email = $users->getColumn('email');
 
         $this->assertTrue(
-            $email->unique
+            $email->meta['unique']
         );
     }
 }
