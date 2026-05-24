@@ -203,10 +203,17 @@ Foreign keys are generated for new tables only.'
                 continue;
             }
 
-            foreach ($desiredTable->indexes as $indexName => $desiredIndex) {
+            /**
+             * ADD / WARNING
+             */
+            foreach (
+                $desiredTable->indexes
+                as $indexName => $desiredIndex
+            ) {
 
                 $currentIndex = $currentTable->getIndex($indexName);
 
+                // missing index
                 if (!$currentIndex) {
 
                     $operations[] = new AddIndex(
@@ -216,11 +223,33 @@ Foreign keys are generated for new tables only.'
 
                     continue;
                 }
+
+                // existing but different
+                if (!$this->indexComparator->equals(
+                    $currentIndex,
+                    $desiredIndex
+                )) {
+
+                    $this->report->warn(
+                        "Index '{$indexName}' on table '{$tableName}' differs from desired schema and was ignored."
+                    );
+                }
             }
 
-            foreach ($currentTable->indexes as $indexName => $currentIndex) {
+            /**
+             * DROP
+             */
+            foreach (
+                $currentTable->indexes
+                as $indexName => $currentIndex
+            ) {
 
-                if (!$desiredTable->hasIndex($indexName)) {
+                if (
+                    !$desiredTable->hasIndex(
+                        $indexName
+                    )
+                ) {
+
                     $operations[] = new DropIndex(
                         $tableName,
                         $indexName
@@ -265,18 +294,14 @@ Foreign keys are generated for new tables only.'
                     )
                 ) {
 
-                    $operations[] =
-                        new RenameColumn(
-                            $tableName,
-                            $currentName,
-                            $desiredName
-                        );
+                    $operations[] = new RenameColumn(
+                        $tableName,
+                        $currentName,
+                        $desiredName
+                    );
 
-                    $usedCurrent[] =
-                        $currentName;
-
-                    $usedDesired[] =
-                        $desiredName;
+                    $usedCurrent[] = $currentName;
+                    $usedDesired[] = $desiredName;
 
                     break;
                 }
