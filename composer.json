@@ -31,6 +31,9 @@
         "test": "phpunit",
         "fix": "php-cs-fixer fix"
     },
+    "bin": [
+        "bin/migrate"
+    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }
