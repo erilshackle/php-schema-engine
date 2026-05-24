@@ -70,6 +70,15 @@ class TableDefinition
         $this->foreignKeys[$foreignKey->name] = $foreignKey;
     }
 
+    public function removeForeignKey(
+        string $name
+    ): void {
+
+        unset(
+            $this->foreignKeys[$name]
+        );
+    }
+
     public function addIndexFromArray(array $data): void
     {
         $index = IndexDefinition::fromArray($data);

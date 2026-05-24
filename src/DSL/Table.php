@@ -44,6 +44,14 @@ class Table
             ->primary();
     }
 
+    public function uuidPrimary(
+        string $name = 'id'
+    ): Column {
+
+        return $this->uuid($name)
+            ->primary();
+    }
+
     public function string(
         string $name,
         int $length = 255
@@ -210,6 +218,12 @@ class Table
             ->defaultCurrentTimestamp();
     }
 
+    public function deletedAt(): Column
+    {
+        return $this->timestamp('deleted_at')
+            ->nullable();
+    }
+
     //** SHORTCUT FIELDS
 
     public function timestamps(): void
@@ -227,26 +241,45 @@ class Table
             ->default(null);
     }
 
-    public function rememberToken(): void
-    {
-        $this->text('remember_token')
-            ->nullable()
-            ->default(null);
-    }
-
-    public function foreignId(
-        string $name,
-        ?string $references = null
+    public function rememberToken(
+        string $name = 'remember_token'
     ): Column {
 
-        $field = $this->bigInt($name)
+        return $this->string($name, 100)
+            ->nullable();
+    }
+
+    public function status(
+        string $name = 'status',
+        string $default = 'active'
+    ): Column {
+
+        return $this->string($name)
+            ->default($default)
+            ->index();
+    }
+
+    public function slug(
+        string $name = 'slug'
+    ): Column {
+
+        return $this->string($name)
+            ->unique();
+    }
+
+    // INDEXES
+
+    public function foreignId(
+        string $name
+    ): ForeignIdColumn {
+
+        $column = $this->bigInt($name)
             ->index();
 
-        if ($references) {
-            $field->foreign($references);
-        }
-
-        return $field;
+        return new ForeignIdColumn(
+            $column,
+            $this->definition
+        );
     }
 
 

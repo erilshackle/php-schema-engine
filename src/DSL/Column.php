@@ -172,13 +172,13 @@ class Column
         return new ForeignKey($foreignKey);
     }
 
-    public function constrained(
-        ?string $table = null,
-        string $column = 'id'
-    ): ForeignKey {
-        $table ??= $this->inferReferencedTable();
-        return $this->foreign($table, $column);
-    }
+    // public function constrained(
+    //     ?string $table = null,
+    //     string $column = 'id'
+    // ): ForeignKey {
+    //     $table ??= $this->inferReferencedTable();
+    //     return $this->foreign($table, $column);
+    // }
 
     protected function inferReferencedTable(): string
     {

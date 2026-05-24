@@ -17,11 +17,13 @@ use SchemaEngine\Operations\Table\DropTable;
 class SchemaDiffer
 {
     protected ColumnComparator $comparator;
+    protected IndexComparator $indexComparator;
     protected DiffReport $report;
 
     public function __construct()
     {
         $this->comparator = new ColumnComparator();
+        $this->indexComparator = new IndexComparator();
         $this->report = new DiffReport();
     }
 
@@ -47,6 +49,12 @@ class SchemaDiffer
             $this->diffColumns($current, $desired)
         );
 
+        // Indexes
+        $operations = array_merge(
+            $operations,
+            $this->diffIndexes($current, $desired)
+        );
+
         return $operations;
     }
 
@@ -61,8 +69,8 @@ class SchemaDiffer
     ): array {
 
         $this->report?->warn(
-            'V1 does not automatically migrate index or foreign key changes after table creation. 
-            Indexes and foreign keys are generated for new tables only.'
+            'V1 automatically adds missing indexes, but does not modify or drop existing indexes.
+Foreign keys are generated for new tables only.'
 
         );
 
@@ -173,6 +181,50 @@ class SchemaDiffer
                             $tableName,
                             $columnName
                         );
+                }
+            }
+        }
+
+        return $operations;
+    }
+
+    protected function diffIndexes(
+        SchemaDefinition $current,
+        SchemaDefinition $desired
+    ): array {
+
+        $operations = [];
+
+        foreach ($desired->tables as $tableName => $desiredTable) {
+
+            $currentTable = $current->getTable($tableName);
+
+            if (!$currentTable) {
+                continue;
+            }
+
+            foreach ($desiredTable->indexes as $indexName => $desiredIndex) {
+
+                $currentIndex = $currentTable->getIndex($indexName);
+
+                if (!$currentIndex) {
+
+                    $operations[] = new AddIndex(
+                        $tableName,
+                        $desiredIndex
+                    );
+
+                    continue;
+                }
+            }
+
+            foreach ($currentTable->indexes as $indexName => $currentIndex) {
+
+                if (!$desiredTable->hasIndex($indexName)) {
+                    $operations[] = new DropIndex(
+                        $tableName,
+                        $indexName
+                    );
                 }
             }
         }

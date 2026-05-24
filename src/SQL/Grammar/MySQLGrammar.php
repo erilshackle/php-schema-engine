@@ -56,11 +56,11 @@ class MySQLGrammar
                 $operation
             ),
 
-            // $operation instanceof AddIndex =>
-            // $this->compileAddIndex($operation),
+            $operation instanceof AddIndex =>
+            $this->compileAddIndex($operation),
 
-            // $operation instanceof DropIndex =>
-            // $this->compileDropIndex($operation),
+            $operation instanceof DropIndex =>
+            $this->compileDropIndex($operation),
 
             default => throw new RuntimeException(
                 'Unsupported operation: '
@@ -290,6 +290,38 @@ DROP TABLE `{$operation->table}`
 ";
     }
 
+
+
+    protected function compileAddIndex(
+        AddIndex $operation
+    ): string {
+
+        $index = $this->compileIndex(
+            $operation->index
+        );
+
+        return "
+ALTER TABLE `{$operation->table}` 
+ADD {$index}";
+    }
+
+    protected function compileDropIndex(
+        DropIndex $operation
+    ): string {
+
+        if (strtolower($operation->name) === 'primary') {
+            return "
+ALTER TABLE `{$operation->table}`
+DROP PRIMARY KEY `{$operation->name}`
+";
+        }
+
+        return "
+ALTER TABLE `{$operation->table}`
+DROP INDEX `{$operation->name}`
+";
+    }
+
     protected function compileDefault(
         mixed $value
     ): string {
@@ -349,38 +381,4 @@ DROP TABLE `{$operation->table}`
 
         return $sql;
     }
-
-
-
-    // protected function compileAddIndex(
-    //     AddIndex $operation
-    // ): string {
-
-    //     $index =
-    //         $this->compileIndex(
-    //             $operation->index
-    //         );
-
-    //     return "
-    //     ALTER TABLE `{$operation->table}`
-    //     ADD {$index}
-    //     ";
-    // }
-
-    // protected function compileDropIndex(
-    //     DropIndex $operation
-    // ): string {
-
-    //     if ($operation->name === 'primary') {
-    //         return "
-    //         ALTER TABLE `{$operation->table}`
-    //         DROP PRIMARY KEY `{$operation->name}`
-    //         ";
-    //     }
-
-    //     return "
-    //     ALTER TABLE `{$operation->table}`
-    //     DROP INDEX `{$operation->name}`
-    //     ";
-    // }
 }
