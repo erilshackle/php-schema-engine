@@ -1,10 +1,12 @@
-<?php
+<?php // example
 
+use SchemaEngine\DSL\Schema;
+use SchemaEngine\DSL\Table;
 use SchemaEngine\SQL\DB;
 
-return function ($schema) {
+return function (Schema $schema) {
 
-    $schema->table('users', function ($t) {
+    $schema->table('users', function (Table $t) {
         $t->id();
 
         $t->string('name');
@@ -23,7 +25,21 @@ return function ($schema) {
         $t->string('title');
         $t->text('body');
 
+        $t->string('slug')->unique();
+
         $t->timestamps();
         $t->softDeletes();
+    });
+
+    $schema->table('comments', function ($t) {
+        $t->id();
+
+        $t->foreignId('post_id')
+            ->constrained()
+            ->cascadeOnDelete();
+
+        $t->text('body');
+
+        $t->timestamps();
     });
 };
