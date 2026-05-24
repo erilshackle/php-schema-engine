@@ -7,6 +7,7 @@ use RuntimeException;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\DropTable;
 use SchemaEngine\Operations\Column\DropColumn;
+use SchemaEngine\Operations\Index\DropIndex;
 use SchemaEngine\SQL\SQLGenerator;
 
 class Migrator
@@ -59,10 +60,8 @@ class Migrator
 
             $this->pdo->exec($sql);
 
-            $this->repository->log(
-                get_class($operations[$index]),
-                $batch
-            );
+            $operation = basename(str_replace('\\', '/', get_class($operations[$index])));
+            $this->repository->log($operation, $batch);
         }
 
         return $sqlList;
@@ -80,6 +79,7 @@ class Migrator
         if (
             $operation instanceof DropTable
             || $operation instanceof DropColumn
+            || $operation instanceof DropIndex
         ) {
 
             throw new RuntimeException(
