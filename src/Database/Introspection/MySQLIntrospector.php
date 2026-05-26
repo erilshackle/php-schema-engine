@@ -274,7 +274,9 @@ class MySQLIntrospector
         foreach ($this->indexBuffer as $row) {
 
             $table = $row['TABLE_NAME'];
-            $index = $row['INDEX_NAME'];
+            $index = strtolower($row['INDEX_NAME']) === 'primary'
+                ? 'primary'
+                : $row['INDEX_NAME'];
 
             $grouped[$table][$index] ??= [
                 'columns' => [],

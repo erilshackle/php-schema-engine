@@ -65,7 +65,7 @@ class ForeignIdColumn
     }
 
     public function references(
-        string $table,
+        ?string $table = null,
         string $column = 'id',
     ): ForeignKey {
         return $this->constrained($table, $column);

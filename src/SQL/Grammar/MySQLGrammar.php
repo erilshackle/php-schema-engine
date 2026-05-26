@@ -314,9 +314,10 @@ ADD {$index}";
     ): string {
 
         if (strtolower($operation->name) === 'primary') {
+            // ALTER TABLE `{$operation->table}` DROP PRIMARY KEY `{$operation->name}`
             return "
 ALTER TABLE `{$operation->table}`
-DROP PRIMARY KEY `{$operation->name}`
+DROP PRIMARY KEY
 ";
         }
 

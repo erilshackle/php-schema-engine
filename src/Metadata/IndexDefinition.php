@@ -16,8 +16,9 @@ class IndexDefinition
         string $name,
         array $columns
     ) {
-
-        $this->name = $name;
+        $this->name = strtolower($name) === 'primary'
+            ? 'primary'
+            : $name;
 
         $this->columns = $columns;
     }
