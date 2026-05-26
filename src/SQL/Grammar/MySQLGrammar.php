@@ -11,6 +11,7 @@ use SchemaEngine\Operations\Column\RenameColumn;
 use SchemaEngine\Operations\Column\AddColumn;
 use SchemaEngine\Operations\Column\DropColumn;
 use SchemaEngine\Operations\Column\ModifyColumn;
+use SchemaEngine\Operations\ForeignKey\AddForeignKey;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
@@ -55,6 +56,9 @@ class MySQLGrammar
             $this->compileRenameColumn(
                 $operation
             ),
+
+            $operation instanceof AddForeignKey =>
+            $this->compileAddForeignKey($operation),
 
             $operation instanceof AddIndex =>
             $this->compileAddIndex($operation),
@@ -320,6 +324,19 @@ DROP PRIMARY KEY `{$operation->name}`
 ALTER TABLE `{$operation->table}`
 DROP INDEX `{$operation->name}`
 ";
+    }
+
+    protected function compileAddForeignKey(
+        AddForeignKey $operation
+    ): string {
+
+        $foreignKey = $this->compileForeignKey(
+            $operation->foreignKey
+        );
+
+        return "
+ALTER TABLE `{$operation->table}` 
+ADD {$foreignKey}";
     }
 
     protected function compileDefault(

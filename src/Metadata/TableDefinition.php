@@ -79,6 +79,20 @@ class TableDefinition
         );
     }
 
+    public function getForeignKey(
+        string $name
+    ): ?ForeignKeyDefinition {
+
+        return $this->foreignKeys[$name] ?? null;
+    }
+
+    public function hasForeignKey(
+        string $name
+    ): bool {
+
+        return isset($this->foreignKeys[$name]);
+    }
+
     public function addIndexFromArray(array $data): void
     {
         $index = IndexDefinition::fromArray($data);

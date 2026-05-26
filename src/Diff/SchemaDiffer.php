@@ -7,6 +7,7 @@ use SchemaEngine\Operations\Column\AddColumn;
 use SchemaEngine\Operations\Column\DropColumn;
 use SchemaEngine\Operations\Column\ModifyColumn;
 use SchemaEngine\Operations\Column\RenameColumn;
+use SchemaEngine\Operations\ForeignKey\AddForeignKey;
 use SchemaEngine\Operations\Index\AddIndex;
 use SchemaEngine\Operations\Index\DropIndex;
 use SchemaEngine\Operations\Operation;
@@ -18,12 +19,16 @@ class SchemaDiffer
 {
     protected ColumnComparator $comparator;
     protected IndexComparator $indexComparator;
+    protected ForeignKeyComparator $foreignKeyComparator;
+    protected SchemaTableSorter $tableSorter;
     protected DiffReport $report;
 
     public function __construct()
     {
         $this->comparator = new ColumnComparator();
         $this->indexComparator = new IndexComparator();
+        $this->foreignKeyComparator = new ForeignKeyComparator();
+        $this->tableSorter = new SchemaTableSorter();
         $this->report = new DiffReport();
     }
 
@@ -55,6 +60,12 @@ class SchemaDiffer
             $this->diffIndexes($current, $desired)
         );
 
+        // foreign
+        $operations = array_merge(
+            $operations,
+            $this->diffForeignKeys($current, $desired)
+        );
+
         return $operations;
     }
 
@@ -69,32 +80,25 @@ class SchemaDiffer
     ): array {
 
         $this->report?->warn(
-            'V1 automatically adds missing indexes, but does not modify or drop existing indexes.
-Foreign keys are generated for new tables only.'
+            'V1 automatically adds missing indexes and foreign keys, but does not modify existing indexes or foreign keys.
+Destructive index changes require --force.'
 
         );
 
         $operations = [];
 
         // novas tabelas
-        foreach ($desired->tables as $tableName => $table) {
-
-
+        foreach ($this->tableSorter->sortForCreation($desired) as $table) {
+            $tableName = $table->name;
             if (!$current->hasTable($tableName)) {
-
-                $operations[] =
-                    new CreateTable($table);
+                $operations[] = new CreateTable($table);
             }
         }
 
         // tabelas removidas
         foreach ($current->tables as $tableName => $table) {
-
-
             if (!$desired->hasTable($tableName)) {
-
-                $operations[] =
-                    new DropTable($tableName);
+                $operations[] = new DropTable($tableName);
             }
         }
 
@@ -253,6 +257,53 @@ Foreign keys are generated for new tables only.'
                     $operations[] = new DropIndex(
                         $tableName,
                         $indexName
+                    );
+                }
+            }
+        }
+
+        return $operations;
+    }
+
+    protected function diffForeignKeys(
+        SchemaDefinition $current,
+        SchemaDefinition $desired
+    ): array {
+
+        $operations = [];
+
+        foreach ($desired->tables as $tableName => $desiredTable) {
+
+            $currentTable = $current->getTable($tableName);
+
+            if (!$currentTable) {
+                continue;
+            }
+
+            foreach ($desiredTable->foreignKeys as $foreignKeyName => $desiredForeignKey) {
+
+                $currentForeignKey = $currentTable->getForeignKey(
+                    $foreignKeyName
+                );
+
+                if (!$currentForeignKey) {
+
+                    $operations[] = new AddForeignKey(
+                        $tableName,
+                        $desiredForeignKey
+                    );
+
+                    continue;
+                }
+
+                if (
+                    !$this->foreignKeyComparator->equals(
+                        $currentForeignKey,
+                        $desiredForeignKey
+                    )
+                ) {
+                    $this->report->warn(
+                        "Foreign key '{$foreignKeyName}' on table '{$tableName}' differs from desired schema and was ignored."
                     );
                 }
             }
