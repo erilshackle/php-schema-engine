@@ -58,6 +58,8 @@ class MigrateCommand
 
         $this->handleStatus($repository);
 
+        $this->handleRollback();
+
         $this->handleFresh();
 
         $desired =
@@ -154,6 +156,38 @@ class MigrateCommand
         foreach ($rows as $row) {
             echo "[Batch {$row['batch']}] {$row['migration']} - {$row['executed_at']}\n";
         }
+
+        exit(0);
+    }
+
+    protected function handleRollback(): void
+    {
+        if (!$this->hasOption('rollback')) {
+            return;
+        }
+
+        $migrator = new Migrator($this->pdo);
+
+        $sqlList = $migrator->rollback(
+            dryRun: $this->isDryRun()
+        );
+
+        if (empty($sqlList)) {
+            echo "Nothing to rollback.\n";
+            exit(0);
+        }
+
+        echo "\nRollback SQL:\n\n";
+
+        foreach ($sqlList as $sql) {
+            echo $sql . "\n\n";
+        }
+
+        if ($this->isDryRun()) {
+            exit(0);
+        }
+
+        echo "Rollback completed.\n";
 
         exit(0);
     }

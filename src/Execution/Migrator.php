@@ -50,6 +50,13 @@ class Migrator
             $sqlList[] = $sql;
         }
 
+        $rollbackSqlList = [];
+
+        foreach ($operations as $operation) {
+            $rollbackSqlList[] =
+                $this->generator->reverse($operation);
+        }
+
         if ($dryRun) {
             return $sqlList;
         }
@@ -62,7 +69,68 @@ class Migrator
 
             $operation = basename(str_replace('\\', '/', get_class($operations[$index])));
             $this->repository->log($operation, $batch);
+
+            $this->repository->logOperation(
+                $batch,
+                get_class($operations[$index]),
+                $sql,
+                $rollbackSqlList[$index]
+            );
         }
+
+        return $sqlList;
+    }
+
+
+    /**
+     * rollback:
+     * CreateTable -> DropTable
+     * AddColumn -> DropColumn
+     * ModifyColumn -> ModifyColumn antigo
+     * AddIndex -> DropIndex
+
+     * @param bool $dryRun
+     * @throws RuntimeException
+     * @return array
+     */
+    public function rollback(
+        bool $dryRun = false
+    ): array {
+
+        $batch = $this->repository->lastBatch();
+
+        if (!$batch) {
+            return [];
+        }
+
+        $operations =
+            $this->repository->rollbackOperations(
+                $batch
+            );
+
+        $sqlList = [];
+
+        foreach ($operations as $operation) {
+
+            if (!$operation['rollback_sql']) {
+                throw new RuntimeException(
+                    "Operation {$operation['operation']} cannot be rolled back automatically."
+                );
+            }
+
+            $sqlList[] =
+                $operation['rollback_sql'];
+        }
+
+        if ($dryRun) {
+            return $sqlList;
+        }
+
+        foreach ($sqlList as $sql) {
+            $this->pdo->exec($sql);
+        }
+
+        $this->repository->deleteBatch($batch);
 
         return $sqlList;
     }
