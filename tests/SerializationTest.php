@@ -15,7 +15,6 @@ class SerializationTest extends TestCase
 
             $t->string('email')
                 ->unique();
-
         });
 
         $array = $schema
@@ -24,15 +23,11 @@ class SerializationTest extends TestCase
 
         $this->assertEquals(
             'varchar',
-            $array['tables']['users']
-                  ['columns']['email']
-                  ['type']
+            $array['tables']['users']['columns']['email']['type']
         );
 
         $this->assertTrue(
-            $array['tables']['users']
-                  ['columns']['email']
-                  ['unique']
+            $schema->toDefinition()->getTable('users')?->hasIndex('email_unique')
         );
     }
 }
