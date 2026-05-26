@@ -4,7 +4,7 @@ A modern schema-first migration engine for PHP.
 
 PHP Schema Engine lets you define your database structure using a clean PHP DSL, compare it against the current database schema, generate SQL automatically, and apply changes through a lightweight CLI.
 
-> Current version: `0.1.0-alpha`
+> Current version: `0.3.0-alpha`
 
 ---
 
@@ -486,7 +486,6 @@ Current V1 limitations:
 * Existing indexes are not automatically modified
 * Foreign key changes after table creation are not automatically migrated
 * Rename detection is disabled by default
-* Rollbacks are not implemented yet
 * Table recreation is not implemented yet
 * No PostgreSQL grammar yet
 * No SQLite grammar yet
