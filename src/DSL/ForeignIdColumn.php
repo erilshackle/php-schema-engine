@@ -4,6 +4,7 @@ namespace SchemaEngine\DSL;
 
 use SchemaEngine\Metadata\ForeignKeyDefinition;
 use SchemaEngine\Metadata\TableDefinition;
+use SchemaEngine\Naming\NameInflector;
 
 class ForeignIdColumn
 {
@@ -32,6 +33,24 @@ class ForeignIdColumn
 
     /**
      *  REFERENCES
+     */
+
+    /**
+     * Define a foreign key reference for this column.
+     *
+     * This is the SQL-oriented API. For conventional BIGINT foreign keys
+     *
+     * Example:
+     *
+     * ```php
+     * $t->uuid('author_id')
+     *     ->constrained();
+     * ```
+     *
+     * @param string $table Referenced table name.
+     * @param string $column Referenced column name.
+     * @param string|null $name Foreign key constraint name.
+     * @return ForeignKey
      */
     public function constrained(
         ?string $table = null,
@@ -64,6 +83,24 @@ class ForeignIdColumn
         return new ForeignKey($foreignKey);
     }
 
+    /**
+     * Define a foreign key reference for this column.
+     *
+     * This is the SQL-oriented API. For conventional BIGINT foreign keys,
+     * prefer {@see Table::foreignId()}.
+     *
+     * Example:
+     *
+     * ```php
+     * $t->uuid('author_id')
+     *     ->references('users', 'uuid');
+     * ```
+     *
+     * @param string $table Referenced table name.
+     * @param string $column Referenced column name.
+     * @param string|null $name Foreign key constraint name.
+     * @return ForeignKey
+     */
     public function references(
         ?string $table = null,
         string $column = 'id',
@@ -86,12 +123,9 @@ class ForeignIdColumn
 
     protected function inferReferencedTable(): string
     {
-        $name = $this->columnName();
-
-        if (str_ends_with($name, '_id')) {
-            return substr($name, 0, -3) . 's';
-        }
-
-        return $name;
+        return (new NameInflector())
+            ->tableFromForeignKey(
+                $this->columnName()
+            );
     }
 }
