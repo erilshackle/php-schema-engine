@@ -4,9 +4,20 @@ namespace SchemaEngine\Generator;
 
 use SchemaEngine\Metadata\SchemaDefinition;
 use SchemaEngine\Metadata\TableDefinition;
+use SchemaEngine\Naming\NameInflector;
 
 class ModelGenerator
 {
+
+    protected NameInflector $inflector;
+
+    public function __construct(
+        ?NameInflector $inflector = null
+    ) {
+        $this->inflector =
+            $inflector ?? new NameInflector();
+    }
+
     public function generate(
         SchemaDefinition $schema,
         array $config
@@ -133,16 +144,7 @@ PHP;
         string $table
     ): string {
 
-        $singular = str_ends_with($table, 'ies')
-            ? substr($table, 0, -3) . 'y'
-            : rtrim($table, 's');
-
-        return str_replace(
-            ' ',
-            '',
-            ucwords(
-                str_replace('_', ' ', $singular)
-            )
-        );
+        return $this->inflector
+            ->classNameFromTable($table);
     }
 }
