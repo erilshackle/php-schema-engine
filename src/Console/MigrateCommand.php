@@ -44,10 +44,9 @@ class MigrateCommand
 
         $this->handleInit();
 
-        $this->loadBootstrap();
+        $this->config = $this->configLoader->load();
 
-        $this->config =
-            $this->configLoader->load();
+        $this->loadBootstrap();
 
         $this->pdo = ConnectionFactory::make(
             $this->config['database']
@@ -119,23 +118,44 @@ class MigrateCommand
             return;
         }
 
-        if (!$this->configLoader->create()) {
-            echo "schema-engine.php already exists.\n";
+        $created = [];
+
+        if ($this->configLoader->create()) {
+            $created[] = 'schema-engine.php';
+        }
+
+        $initializer = new ProjectInitializer($this->root);
+
+        $created = array_merge(
+            $created,
+            $initializer->run(
+                force: $this->isForce()
+            )
+        );
+
+        if (empty($created)) {
+            echo "Nothing to initialize. Files already exist.\n";
+            echo "Use --force to overwrite generated files.\n";
             exit(0);
         }
 
-        echo "schema-engine.php created.\n";
+        echo "Initialized PHP Schema Engine:\n\n";
+
+        foreach ($created as $file) {
+            echo "- {$file}\n";
+        }
+
         exit(0);
     }
 
     protected function loadBootstrap(): void
     {
-        $bootstrap = $this->root
-            . DIRECTORY_SEPARATOR
-            . 'bootstrap.php';
+        $bootstrap = $this->config['bootstrap'] ?? 'bootstrap.php';
 
-        if (file_exists($bootstrap)) {
-            require $bootstrap;
+        $path = $this->configLoader->path($bootstrap);
+
+        if (file_exists($path)) {
+            require $path;
         }
     }
 
@@ -238,6 +258,14 @@ class MigrateCommand
         $modelsConfig =
             $this->config['generator']['models'] ?? [];
 
+        if (
+            isset($modelsConfig['enabled'])
+            && !$modelsConfig['enabled']
+            && !$this->hasOption('generate-models')
+        ) {
+            return;
+        }
+
         $modelsConfig['path'] =
             $this->configLoader->path(
                 $modelsConfig['path'] ?? 'app/Models'
@@ -332,7 +360,8 @@ class MigrateCommand
 
         $snapshotPath =
             $this->configLoader->path(
-                'storage/schema.snapshot.json'
+                $this->config['snapshots']['path']
+                    ?? 'storage/schema.snapshot.json'
             );
 
         $snapshotDir = dirname($snapshotPath);
