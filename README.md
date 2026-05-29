@@ -55,6 +55,9 @@ This creates:
 
 ```txt
 schema-engine.php
+database/schema.php
+database/bootstrap.sql
+database/snapshots/
 ```
 
 ---
