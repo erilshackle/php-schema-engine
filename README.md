@@ -292,21 +292,29 @@ Index 'email_unique' on table 'users' differs from desired schema and was ignore
 Simple inferred relation:
 
 ```php
-$t->foreignId('user_id');
+$t->foreign('user_id');
 ```
 
 Explicit references:
 
 ```php
-$t->foreignId('user_id')
+$t->foreign('user_id')
     ->constrained() // or references('users')
     ->cascadeOnDelete();
 ```
 
-Custom table:
+Explicit references:
 
 ```php
-$t->foreignId('author_id')
+$t->foreign('user_id')
+    ->constrained() // or references('users')
+    ->cascadeOnDelete();
+```
+
+ou:
+
+```php
+$t->foreign('author_id')
     ->references('users');
 ```
 

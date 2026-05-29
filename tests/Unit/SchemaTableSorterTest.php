@@ -12,12 +12,12 @@ class SchemaTableSorterTest extends TestCase
 
         $schema->table('comments', function ($t) {
             $t->id();
-            $t->foreignId('post_id')->references();
+            $t->foreign('post_id')->constrained();
         });
 
         $schema->table('posts', function ($t) {
             $t->id();
-            $t->foreignId('user_id')->references();
+            $t->foreign('user_id')->constrained();
         });
 
         $schema->table('users', function ($t) {
@@ -47,7 +47,7 @@ class SchemaTableSorterTest extends TestCase
 
         $schema->table('posts', function ($t) {
             $t->id();
-            $t->foreignId('user_id')->references();
+            $t->foreign('user_id')->constrained();
         });
 
         $schema->table('users', function ($t) {

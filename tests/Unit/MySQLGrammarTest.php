@@ -14,7 +14,7 @@ class MySQLGrammarTest extends TestCase
         $schema->table('posts', function ($t) {
             $t->id();
 
-            $t->foreignId('user_id')
+            $t->foreign('user_id')
                 ->references('users')
                 ->cascadeOnDelete();
 

@@ -17,8 +17,8 @@ class SchemaDslTest extends TestCase
         $schema->table('posts', function ($t) {
             $t->id();
 
-            $t->foreignId('user_id')
-                ->references()
+            $t->foreign('user_id')
+                ->constrained()
                 ->cascadeOnDelete();
 
             $t->string('title');

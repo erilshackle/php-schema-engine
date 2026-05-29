@@ -39,7 +39,7 @@ return function (Schema $schema) {
     $schema->table('user_profiles', function (Table $t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->constrained()
             ->cascadeOnDelete();
 
@@ -84,11 +84,11 @@ return function (Schema $schema) {
     $schema->table('role_user', function (Table $t) {
         $t->id();
 
-        $t->foreignId('role_id')
+        $t->foreign('role_id')
             ->constrained('roles')
             ->cascadeOnDelete();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->constrained('users')
             ->cascadeOnDelete();
 
@@ -100,11 +100,11 @@ return function (Schema $schema) {
     $schema->table('permission_role', function (Table $t) {
         $t->id();
 
-        $t->foreignId('permission_id')
+        $t->foreign('permission_id')
             ->constrained('permissions')
             ->cascadeOnDelete();
 
-        $t->foreignId('role_id')
+        $t->foreign('role_id')
             ->constrained('roles')
             ->cascadeOnDelete();
 
@@ -122,7 +122,7 @@ return function (Schema $schema) {
     $schema->table('sessions', function (Table $t) {
         $t->string('id', 128)->primary();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->nullable()
             ->constrained('users')
             ->nullOnDelete();
@@ -150,7 +150,7 @@ return function (Schema $schema) {
     $schema->table('personal_access_tokens', function (Table $t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->constrained()
             ->cascadeOnDelete();
 
@@ -208,11 +208,11 @@ return function (Schema $schema) {
     $schema->table('posts', function (Table $t) {
         $t->id();
 
-        $t->foreignId('author_id')
+        $t->foreign('author_id')
             ->constrained('users')
             ->cascadeOnDelete();
 
-        $t->foreignId('category_id')
+        $t->foreign('category_id')
             ->nullable()
             ->constrained('categories')
             ->nullOnDelete();
@@ -238,11 +238,11 @@ return function (Schema $schema) {
     $schema->table('post_tag', function (Table $t) {
         $t->id();
 
-        $t->foreignId('post_id')
+        $t->foreign('post_id')
             ->constrained('posts')
             ->cascadeOnDelete();
 
-        $t->foreignId('tag_id')
+        $t->foreign('tag_id')
             ->constrained('tags')
             ->cascadeOnDelete();
 
@@ -254,16 +254,16 @@ return function (Schema $schema) {
     $schema->table('comments', function (Table $t) {
         $t->id();
 
-        $t->foreignId('post_id')
+        $t->foreign('post_id')
             ->constrained('posts')
             ->cascadeOnDelete();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->nullable()
             ->constrained('users')
             ->nullOnDelete();
 
-        $t->foreignId('parent_id')
+        $t->foreign('parent_id')
             ->nullable()
             ->constrained('comments')
             ->cascadeOnDelete();
@@ -288,7 +288,7 @@ return function (Schema $schema) {
     $schema->table('media', function (Table $t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->nullable()
             ->constrained('users')
             ->nullOnDelete();
@@ -314,7 +314,7 @@ return function (Schema $schema) {
     $schema->table('notifications', function (Table $t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->constrained()
             ->cascadeOnDelete();
 
@@ -340,7 +340,7 @@ return function (Schema $schema) {
     $schema->table('activity_logs', function (Table $t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->nullable()
             ->constrained('users')
             ->nullOnDelete();

@@ -56,7 +56,7 @@ class MySQLIntegrationTest extends TestCase
 
     public function test_can_create_related_tables_and_introspect_them(): void
     {
-        $desired = $this->schema(function ($schema) {
+        $desired = $this->schema(function (Schema $schema) {
             $schema->table('users', function ($t) {
                 $t->id();
                 $t->string('email')->unique();
@@ -66,8 +66,8 @@ class MySQLIntegrationTest extends TestCase
             $schema->table('posts', function ($t) {
                 $t->id();
 
-                $t->foreignId('user_id')
-                    ->references()
+                $t->foreign('user_id')
+                    ->constrained()
                     ->cascadeOnDelete();
 
                 $t->string('title');
@@ -124,8 +124,8 @@ class MySQLIntegrationTest extends TestCase
             $schema->table('posts', function ($t) {
                 $t->id();
 
-                $t->foreignId('user_id')
-                    ->references()
+                $t->foreign('user_id')
+                    ->constrained()
                     ->cascadeOnDelete();
 
                 $t->string('title');
@@ -214,8 +214,8 @@ class MySQLIntegrationTest extends TestCase
             $schema->table('posts', function ($t) {
                 $t->id();
 
-                $t->foreignId('user_id')
-                    ->references()
+                $t->foreign('user_id')
+                    ->constrained()
                     ->cascadeOnDelete();
 
                 $t->string('title');

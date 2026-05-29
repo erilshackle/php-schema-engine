@@ -456,46 +456,17 @@ class Table
      * ```
      *
      * @param string $name Column name.
-     * @return ForeignIdColumn
+     * @return ForeignColumn
      */
-    public function foreignId(
+    public function foreign(
         string $name
-    ): ForeignIdColumn {
+    ): ForeignColumn {
 
         $column = $this->bigInt($name)
             ->index();
 
-        return new ForeignIdColumn(
-            $column,
-            $this->definition
-        );
-    }
-
-    /**
-     * Add a table-level index.
-     *
-     * @param string|array<int, string> $columns Indexed column or columns.
-     * @param string|null $name Index name. Generated automatically when omitted.
-     * @return void
-     */
-    public function index(
-        string|array $columns,
-        ?string $name = null
-    ): void {
-
-        $columns = (array) $columns;
-
-        $name ??=
-            implode('_', $columns)
-            . '_index';
-
-        $index = new IndexDefinition(
-            $name,
-            $columns
-        );
-
-        $this->definition->addIndex(
-            $index
+        return new ForeignColumn(
+            $column
         );
     }
 
@@ -556,6 +527,35 @@ class Table
             $index
         );
     }
+
+    /**
+     * Add a table-level index.
+     *
+     * @param string|array<int, string> $columns Indexed column or columns.
+     * @param string|null $name Index name. Generated automatically when omitted.
+     * @return void
+     */
+    public function index(
+        string|array $columns,
+        ?string $name = null
+    ): void {
+
+        $columns = (array) $columns;
+
+        $name ??=
+            implode('_', $columns)
+            . '_index';
+
+        $index = new IndexDefinition(
+            $name,
+            $columns
+        );
+
+        $this->definition->addIndex(
+            $index
+        );
+    }
+
 
 
     /**

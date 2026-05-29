@@ -283,8 +283,6 @@ class Column
 
 
     /**
-     * Alias for {@see references()}.
-     *
      * Kept for users who prefer the term "foreign" when declaring
      * non-conventional foreign key columns.
      *
@@ -293,11 +291,13 @@ class Column
      * @param string|null $name Foreign key constraint name.
      * @return ForeignKey
      */
-    public function foreign(
-        string $table,
+    public function constrained(
+        ?string $table = null,
         string $column = 'id',
         ?string $name = null
     ): ForeignKey {
+
+        $table ??= $this->inferReferencedTable();
 
         $name ??= "{$this->definition->name}_foreign";
 
@@ -307,22 +307,19 @@ class Column
         );
 
         $foreignKey->referencedTable = $table;
+
         $foreignKey->referencedColumns = [$column];
 
-        $this->table->addForeignKey($foreignKey);
+        $this->table->addForeignKey(
+            $foreignKey
+        );
 
-        return new ForeignKey($foreignKey);
+        return new ForeignKey(
+            $foreignKey
+        );
     }
 
-    // public function constrained(
-    //     ?string $table = null,
-    //     string $column = 'id'
-    // ): ForeignKey {
-    //     $table ??= $this->inferReferencedTable();
-    //     return $this->foreign($table, $column);
-    // }
 
-    
     protected function inferReferencedTable(): string
     {
         return (new NameInflector())->tableFromForeignKey(
