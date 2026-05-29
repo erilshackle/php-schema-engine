@@ -385,7 +385,6 @@ ADD {$foreignKey}";
      * Summary of compileIndexes
      * @param array $indexes
      * @return string[]
-     * @deprec v1
      */
     protected function compileIndexes(
         array $indexes

@@ -6,4 +6,4 @@ composer.lock
 storage/schema.snapshot.json
 
 /app
-storage/schema.snapshot.json
+/storage/schema.snapshot.json

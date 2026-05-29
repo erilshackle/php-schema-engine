@@ -15,6 +15,7 @@ class MySQLIntrospector
     protected TypeNormalizer $normalizer;
     protected array $ignoredTables = [
         'schema_migrations',
+        'schema_migration_operations',
     ];
 
     protected array $indexBuffer = [];
