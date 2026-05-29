@@ -18,7 +18,7 @@ return function (Schema $schema) {
     $schema->table('posts', function ($t) {
         $t->id();
 
-        $t->foreignId('user_id')
+        $t->foreign('user_id')
             ->constrained()
             ->cascadeOnDelete();
 
@@ -34,9 +34,7 @@ return function (Schema $schema) {
     $schema->table('comments', function ($t) {
         $t->id();
 
-        $t->foreignId('post_id')
-            ->constrained()
-            ->cascadeOnDelete();
+        $t->foreign('post_id')->references('users')->cascadeOnDelete();
 
         $t->text('body');
 

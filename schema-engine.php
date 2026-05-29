@@ -3,6 +3,8 @@
 return [
     'schema' => 'database/schema.php',
 
+    'bootstrap' => 'bootstrap.php',
+
     'database' => [
         'driver' => 'mysql',
         'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
@@ -15,6 +17,7 @@ return [
 
     'generator' => [
         'models' => [
+            'enabled' => false,
             'namespace' => 'App\\Models',
             'path' => 'app/Models',
             'extends' => null,
