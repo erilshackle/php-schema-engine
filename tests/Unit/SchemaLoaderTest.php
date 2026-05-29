@@ -10,7 +10,7 @@ class SchemaLoaderTest extends TestCase
         $loader = new SchemaLoader();
 
         $schema = $loader->load(
-            __DIR__ . '/../database/schema.php'
+            __DIR__ . '/../../database/schema.php'
         );
 
         $this->assertTrue(
