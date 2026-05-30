@@ -1,0 +1,30 @@
+# Export ignore
+/.github export-ignore
+/tests export-ignore
+/docs export-ignore
+
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/phpunit.xml export-ignore
+/phpunit.xml.dist export-ignore
+/phpstan.neon export-ignore
+/phpcs.xml export-ignore
+/.php-cs-fixer.php export-ignore
+
+/CHANGELOG.md export-ignore
+/ROADMAP.md export-ignore
+
+# Dev files
+/composer.lock export-ignore
+/.env export-ignore
+/.env.example export-ignore
+
+# Local/project files
+/database export-ignore
+/storage export-ignore
+/schema-engine.php export-ignore
+/bootstrap.php export-ignore
+
+# IDE/editor
+/.idea export-ignore
+/.vscode export-ignore

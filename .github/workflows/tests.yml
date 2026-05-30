@@ -26,5 +26,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run tests
-        run: composer test -- --exclude-group integration
+      # - name: Run tests
+      #   run: composer test -- --exclude-group integration
+
+      - name: Integration Tests
+        run: composer  test:integration
+
+      - name: Unit Tests
+        run: composer  test:unit
