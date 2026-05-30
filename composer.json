@@ -29,6 +29,8 @@
     },
     "scripts": {
         "test": "phpunit",
+        "test:unit": "phpunit --exclude-group integration",
+        "test:integration": "phpunit --group integration",
         "fix": "php-cs-fixer fix"
     },
     "bin": [
