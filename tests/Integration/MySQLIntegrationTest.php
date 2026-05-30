@@ -1,5 +1,6 @@
 <?php
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use SchemaEngine\Database\Introspection\MySQLIntrospector;
 use SchemaEngine\Diff\SchemaDiffer;
@@ -7,10 +8,8 @@ use SchemaEngine\DSL\Schema;
 use SchemaEngine\Execution\Migrator;
 use SchemaEngine\Metadata\SchemaDefinition;
 
-// #[Group('integration')]
-/**
- * @group integration
- */
+
+#[Group('integration')]
 class MySQLIntegrationTest extends TestCase
 {
     protected ?PDO $pdo = null;
