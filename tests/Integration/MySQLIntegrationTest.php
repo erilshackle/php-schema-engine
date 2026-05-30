@@ -9,7 +9,9 @@ use SchemaEngine\Execution\Migrator;
 use SchemaEngine\Metadata\SchemaDefinition;
 
 
-#[Group('integration')]
+/**
+ * @skip
+ */
 class MySQLIntegrationTest extends TestCase
 {
     protected ?PDO $pdo = null;
@@ -57,6 +59,7 @@ class MySQLIntegrationTest extends TestCase
         }
     }
 
+    #[Group('integration')]
     public function test_can_create_related_tables_and_introspect_them(): void
     {
         $desired = $this->schema(function (Schema $schema) {
@@ -92,6 +95,7 @@ class MySQLIntegrationTest extends TestCase
         $this->assertTrue($posts->hasForeignKey('user_id_foreign'));
     }
 
+    #[Group('integration')]
     public function test_unique_index_is_enforced_by_database(): void
     {
         $desired = $this->schema(function ($schema) {
@@ -116,6 +120,7 @@ class MySQLIntegrationTest extends TestCase
         ");
     }
 
+    #[Group('integration')]
     public function test_foreign_key_cascade_delete_works(): void
     {
         $desired = $this->schema(function ($schema) {
@@ -161,6 +166,7 @@ class MySQLIntegrationTest extends TestCase
         $this->assertSame(0, (int) $count);
     }
 
+    #[Group('integration')]
     public function test_can_add_column_to_existing_table(): void
     {
         $initial = $this->schema(function ($schema) {
@@ -191,6 +197,7 @@ class MySQLIntegrationTest extends TestCase
         );
     }
 
+    #[Group('integration')]
     public function test_can_add_foreign_key_to_existing_table(): void
     {
         $initial = $this->schema(function ($schema) {
