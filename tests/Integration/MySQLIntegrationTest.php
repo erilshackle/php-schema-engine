@@ -9,10 +9,7 @@ use SchemaEngine\Execution\Migrator;
 use SchemaEngine\Metadata\SchemaDefinition;
 
 
-/**
- * @skip
- * @group integration
- */
+#[Group('integration')]
 class MySQLIntegrationTest extends TestCase
 {
     protected ?PDO $pdo = null;
@@ -63,7 +60,6 @@ class MySQLIntegrationTest extends TestCase
     #[Group('integration')]
     public function test_can_create_related_tables_and_introspect_them(): void
     {
-        
         $desired = $this->schema(function (Schema $schema) {
             $schema->table('users', function ($t) {
                 $t->id();

@@ -2,8 +2,12 @@
 
 <phpunit bootstrap="vendor/autoload.php">
     <testsuites>
-        <testsuite name="Schema Engine">
-            <directory>tests</directory>
-        </testsuite>
-    </testsuites>
+    <testsuite name="Unit">
+        <directory>tests/Unit</directory>
+    </testsuite>
+
+    <testsuite name="Integration">
+        <directory>tests/Integration</directory>
+    </testsuite>
+</testsuites>
 </phpunit>
