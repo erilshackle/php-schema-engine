@@ -9,10 +9,10 @@ class MySQLIntrospectorTest extends TestCase
     /**
      * test_can_read_database_schema
      * @return void
-     * @ignore
      */
     public function test_can_read_database_schema(): void
     {
+        $this->markTestSkipped('Database connection not available in test environment');
 
         $anyLocalhostDbName = "test";
 
