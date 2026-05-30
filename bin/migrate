@@ -13,6 +13,7 @@ $options = getopt('', [
     'yes',
     'status',
     'rollback',
+    'recreate',
     'generate-models',
     'clear-history',
     'trace',

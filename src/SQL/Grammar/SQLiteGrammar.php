@@ -6,6 +6,7 @@ use RuntimeException;
 use SchemaEngine\Metadata\ColumnDefinition;
 use SchemaEngine\Metadata\ForeignKeyDefinition;
 use SchemaEngine\Metadata\IndexDefinition;
+use SchemaEngine\Metadata\TableDefinition;
 use SchemaEngine\Operations\Column\AddColumn;
 use SchemaEngine\Operations\Column\DropColumn;
 use SchemaEngine\Operations\Column\ModifyColumn;
@@ -16,6 +17,7 @@ use SchemaEngine\Operations\Index\DropIndex;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
+use SchemaEngine\Operations\Table\RecreateTable;
 use SchemaEngine\SQL\Expression\Expression;
 
 class SQLiteGrammar
@@ -24,35 +26,38 @@ class SQLiteGrammar
     {
         return match (true) {
             $operation instanceof CreateTable =>
-                $this->compileCreateTable($operation),
+            $this->compileCreateTable($operation),
 
             $operation instanceof DropTable =>
-                "DROP TABLE `{$operation->table}`",
+            "DROP TABLE `{$operation->table}`",
 
             $operation instanceof AddColumn =>
-                $this->compileAddColumn($operation),
+            $this->compileAddColumn($operation),
 
             $operation instanceof RenameColumn =>
-                "ALTER TABLE `{$operation->table}` RENAME COLUMN `{$operation->from}` TO `{$operation->to}`",
+            "ALTER TABLE `{$operation->table}` RENAME COLUMN `{$operation->from}` TO `{$operation->to}`",
 
             $operation instanceof DropColumn =>
-                "ALTER TABLE `{$operation->table}` DROP COLUMN `{$operation->column}`",
+            "ALTER TABLE `{$operation->table}` DROP COLUMN `{$operation->column}`",
 
             $operation instanceof ModifyColumn =>
-                throw new RuntimeException(
-                    'SQLite does not support MODIFY COLUMN directly. Use table recreation.'
-                ),
+            throw new RuntimeException(
+                'SQLite does not support MODIFY COLUMN directly. Use table recreation.'
+            ),
 
             $operation instanceof AddIndex =>
-                $this->compileAddIndex($operation),
+            $this->compileAddIndex($operation),
 
             $operation instanceof DropIndex =>
-                $this->compileDropIndex($operation),
+            $this->compileDropIndex($operation),
 
             $operation instanceof AddForeignKey =>
-                throw new RuntimeException(
-                    'SQLite does not support ADD FOREIGN KEY via ALTER TABLE. Use table recreation.'
-                ),
+            throw new RuntimeException(
+                'SQLite does not support ADD FOREIGN KEY via ALTER TABLE. Use table recreation.'
+            ),
+
+            $operation instanceof RecreateTable =>
+            $this->compileRecreateTable($operation),
 
             default => throw new RuntimeException(
                 'Unsupported SQLite operation: ' . get_class($operation)
@@ -213,7 +218,7 @@ class SQLiteGrammar
         return implode(
             ', ',
             array_map(
-                fn ($column) => "`{$column}`",
+                fn($column) => "`{$column}`",
                 $columns
             )
         );
@@ -234,5 +239,61 @@ class SQLiteGrammar
         }
 
         return (string) $value;
+    }
+
+    protected function compileRecreateTable(
+        RecreateTable $operation
+    ): array {
+
+        $current = $operation->current;
+        $desired = $operation->desired;
+
+        $temporaryName = "__schema_tmp_{$desired->name}";
+
+        $temporaryTable = clone $desired;
+        $temporaryTable->name = $temporaryName;
+
+        $createSql = $this->compileCreateTable(
+            new CreateTable($temporaryTable)
+        );
+
+        $copyColumns = $this->sharedColumns(
+            $current,
+            $desired
+        );
+
+        $columnsSql = implode(
+            ', ',
+            array_map(
+                fn($column) => "`{$column}`",
+                $copyColumns
+            )
+        );
+
+        return [
+            'PRAGMA foreign_keys = OFF',
+            $createSql,
+            "INSERT INTO `{$temporaryName}` ({$columnsSql}) SELECT {$columnsSql} FROM `{$current->name}`",
+            "DROP TABLE `{$current->name}`",
+            "ALTER TABLE `{$temporaryName}` RENAME TO `{$desired->name}`",
+            'PRAGMA foreign_keys = ON',
+        ];
+    }
+
+    protected function sharedColumns(
+        TableDefinition $current,
+        TableDefinition $desired
+    ): array {
+
+        $columns = [];
+
+        foreach ($desired->columns as $name => $column) {
+
+            if ($current->hasColumn($name)) {
+                $columns[] = $name;
+            }
+        }
+
+        return $columns;
     }
 }
