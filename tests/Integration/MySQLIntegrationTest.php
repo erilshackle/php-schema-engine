@@ -7,6 +7,10 @@ use SchemaEngine\DSL\Schema;
 use SchemaEngine\Execution\Migrator;
 use SchemaEngine\Metadata\SchemaDefinition;
 
+// #[Group('integration')]
+/**
+ * @group integration
+ */
 class MySQLIntegrationTest extends TestCase
 {
     protected ?PDO $pdo = null;

@@ -27,4 +27,4 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run tests
-        run: composer test
+        run: composer test --exclude-group integration

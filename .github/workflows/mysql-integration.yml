@@ -1,0 +1,70 @@
+name: MySQL Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "composer.json"
+      - "phpunit.xml"
+      - ".github/workflows/mysql-integration.yml"
+
+jobs:
+  mysql-integration:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php: ["8.2", "8.3"]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: schema_engine_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: schema_engine_test
+      DB_USER: root
+      DB_PASS: root
+      DB_CHARSET: utf8mb4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo, pdo_mysql
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h127.0.0.1 -uroot -proot && break
+            sleep 2
+          done
+
+      - name: Verify database
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -e "SHOW DATABASES;"
+          mysql -h127.0.0.1 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS schema_engine_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+      - name: Run MySQL integration tests
+        run: vendor/bin/phpunit --group integration
