@@ -6,6 +6,7 @@ use PDO;
 use SchemaEngine\Config\ConfigLoader;
 use SchemaEngine\Database\ConnectionFactory;
 use SchemaEngine\Database\Introspection\MySQLIntrospector;
+use SchemaEngine\Database\Introspection\SQLiteIntrospector;
 use SchemaEngine\Diff\SchemaDiffer;
 use SchemaEngine\Execution\DatabaseResetter;
 use SchemaEngine\Execution\MigrationRepository;
@@ -15,6 +16,7 @@ use SchemaEngine\Loader\SchemaLoader;
 use SchemaEngine\Metadata\SchemaDefinition;
 use SchemaEngine\Operations\Operation;
 use SchemaEngine\Snapshot\SnapshotManager;
+use SchemaEngine\SQL\SQLGenerator;
 
 class MigrateCommand
 {
@@ -85,8 +87,10 @@ class MigrateCommand
             return 0;
         }
 
-        $migrator =
-            new Migrator($this->pdo);
+        $migrator = new Migrator(
+            $this->pdo,
+            new SQLGenerator($this->config['database']['driver'] ?? 'mysql')
+        );
 
         $this->printPlannedSql(
             $migrator,
@@ -289,10 +293,16 @@ class MigrateCommand
 
     protected function introspectCurrentSchema(): SchemaDefinition
     {
-        $introspector = new MySQLIntrospector(
-            $this->pdo,
-            database: $this->config['database']['database']
-        );
+        $driver = $this->config['database']['driver'] ?? 'mysql';
+
+        $introspector = match ($driver) {
+            'sqlite' => new SQLiteIntrospector($this->pdo),
+
+            default => new MySQLIntrospector(
+                $this->pdo,
+                database: $this->config['database']['database']
+            ),
+        };
 
         return $introspector->getSchema();
     }

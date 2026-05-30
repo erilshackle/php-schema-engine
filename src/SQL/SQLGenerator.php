@@ -12,16 +12,20 @@ use SchemaEngine\Operations\Operation;
 use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
 use SchemaEngine\SQL\Grammar\MySQLGrammar;
+use SchemaEngine\SQL\Grammar\SQLiteGrammar;
 
 class SQLGenerator
 {
     protected MySQLGrammar $grammar;
 
     public function __construct(
-        ?MySQLGrammar $grammar = null
+        protected string $driver = 'mysql'
     ) {
-        $this->grammar =
-            $grammar ?? new MySQLGrammar();
+        $this->grammar ??= match ($this->driver) {
+            'sqlite' => new SQLiteGrammar(),
+            'postgres' => new MySQLGrammar(),
+            default => new MySQLGrammar(),
+        };
     }
 
     public function generate(
