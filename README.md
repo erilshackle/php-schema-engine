@@ -6,6 +6,10 @@ PHP Schema Engine lets you define your database structure using a clean PHP DSL,
 
 > Current version: `0.3.0`
 
+![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)
+![Tests](https://github.com/erilshackle/php-schema-engine/actions/workflows/tests.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 ---
 
 ## Features
