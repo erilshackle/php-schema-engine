@@ -36,13 +36,7 @@ PHP Schema Engine lets you define your database structure using a clean PHP DSL,
 ## Installation
 
 ```bash
-composer require erilshackle/php-schema-engine
-```
-
-For local development:
-
-```bash
-composer install
+composer require eril/schema-engine
 ```
 
 ---
@@ -76,7 +70,9 @@ Generated config example:
 return [
 
     // Schema file path
-    'schema' => '/database/schema.php',
+    'schema' => 'database/schema.php',
+
+    'bootstrap' => 'bootstrap.php',
 
     // Database connection configuration
     'database' => [
@@ -492,7 +488,7 @@ Stack trace:
 
 ## Current Limitations
 
-PHP Schema Engine `0.1.0-alpha` is intentionally conservative.
+PHP Schema Engine `0.3.0` is intentionally conservative.
 
 Current V1 limitations:
 
@@ -552,14 +548,18 @@ The DSL is designed to stay expressive, while the internal architecture keeps me
 * migrate:reset
 * better CLI output
 * schema snapshots
-* explicit rename operations
 
 ### V0.3
 
-* advanced index diffing
 * foreign key diffing
-* table recreation mode
 * rollback support
+
+  
+### V0.4
+
+* advanced index diffing
+* table recreation mode
+* explicit rename operations
 
 ### V1.0
 
