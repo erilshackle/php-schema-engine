@@ -2,6 +2,7 @@
 
 namespace SchemaEngine\DSL;
 
+use SchemaEngine\Metadata\CheckDefinition;
 use SchemaEngine\Metadata\IndexDefinition;
 use SchemaEngine\Metadata\TableDefinition;
 
@@ -61,6 +62,13 @@ class Table
         );
 
         return $column;
+    }
+
+    public function field(
+        string $name,
+        string $type
+    ): Column {
+        return $this->addColumn($name, $type);
     }
 
     /**
@@ -203,6 +211,12 @@ class Table
         return $column;
     }
 
+    public function tinyInt(
+        string $name
+    ): Column {
+        return $this->addColumn($name, 'tinyint');
+    }
+
     /**
      * Add a BOOLEAN column.
      *
@@ -231,6 +245,17 @@ class Table
             $name,
             'text'
         );
+    }
+
+    public function enum(
+        string $name,
+        array $allowed
+    ): Column {
+        $column = $this->addColumn($name, 'enum');
+
+        $column->toDefinition()->allowed = $allowed;
+
+        return $column;
     }
 
     /**
@@ -262,6 +287,18 @@ class Table
             $name,
             'json'
         );
+    }
+
+    public function date(
+        string $name
+    ): Column {
+        return $this->addColumn($name, 'date');
+    }
+
+    public function time(
+        string $name
+    ): Column {
+        return $this->addColumn($name, 'time');
     }
 
     /**
@@ -437,6 +474,15 @@ class Table
 
         return $this->string($name)
             ->unique();
+    }
+
+    public function check(
+        string $name,
+        string $expression
+    ): void {
+        $this->definition->addCheck(
+            new CheckDefinition($name, $expression)
+        );
     }
 
     // INDEXES

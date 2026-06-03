@@ -20,6 +20,12 @@ class ColumnDefinition
 
     public ?int $scale = null;
 
+    public ?string $comment = null;
+
+    public ?string $onUpdate = null;
+
+    public array $allowed = [];
+
     public array $meta = [];
 
     public function __construct(
@@ -41,6 +47,9 @@ class ColumnDefinition
             'length' => $this->length,
             'precision' => $this->precision,
             'scale' => $this->scale,
+            'comment' => $this->comment,
+            'onUpdate' => $this->onUpdate,
+            'allowed' => $this->allowed,
             'meta' => $this->meta,
         ];
     }
@@ -54,26 +63,24 @@ class ColumnDefinition
             $data['type']
         );
 
-        $column->nullable =
-            $data['nullable'];
+        $column->nullable = $data['nullable'];
 
-        $column->autoIncrement =
-            $data['autoIncrement'];
+        $column->autoIncrement = $data['autoIncrement'];
 
-        $column->default =
-            $data['default'];
+        $column->default = $data['default'];
 
-        $column->length =
-            $data['length'];
+        $column->length = $data['length'];
 
-        $column->precision =
-            $data['precision'];
+        $column->precision = $data['precision'];
 
-        $column->scale =
-            $data['scale'];
+        $column->scale = $data['scale'];
 
-            $column->meta =
-    $data['meta'] ?? [];
+        $column->comment = $data['comment'] ?? null;
+        $column->onUpdate = $data['onUpdate'] ?? null;
+        $column->allowed = $data['allowed'] ?? [];
+
+        $column->meta =
+            $data['meta'] ?? [];
 
         return $column;
     }

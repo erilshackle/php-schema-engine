@@ -7,6 +7,7 @@ class TableDefinition
     public string $name;
     public array $indexes = [];
     public array $foreignKeys = [];
+    public array $checks = [];
 
 
     /**
@@ -62,6 +63,11 @@ class TableDefinition
         );
     }
 
+    public function addCheck(
+        CheckDefinition $check
+    ): void {
+        $this->checks[$check->name] = $check;
+    }
 
     public function addForeignKey(
         ForeignKeyDefinition $foreignKey
@@ -155,6 +161,11 @@ class TableDefinition
                 fn($index) => $index->toArray(),
                 $this->indexes
             ),
+
+            'checks' => array_map(
+                fn($check) => $check->toArray(),
+                $this->checks
+            ),
         ];
     }
 
@@ -181,6 +192,12 @@ class TableDefinition
                 IndexDefinition::fromArray(
                     $index
                 )
+            );
+        }
+
+        foreach ($data['checks'] ?? [] as $check) {
+            $table->addCheck(
+                CheckDefinition::fromArray($check)
             );
         }
 

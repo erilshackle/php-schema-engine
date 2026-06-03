@@ -126,6 +126,22 @@ class Column
         return $this;
     }
 
+    public function onUpdateRaw(
+        string $expression
+    ): static {
+        $this->definition->onUpdate = $expression;
+
+        return $this;
+    }
+
+    public function comment(
+        string $comment
+    ): static {
+        $this->definition->comment = $comment;
+
+        return $this;
+    }
+
     /**
      * Set the column length.
      *
@@ -208,6 +224,11 @@ class Column
         return $this->defaultRaw(
             'CURRENT_TIMESTAMP'
         );
+    }
+
+    public function onUpdateCurrentTimestamp(): static
+    {
+        return $this->onUpdateRaw('CURRENT_TIMESTAMP');
     }
 
     //* META

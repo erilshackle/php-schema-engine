@@ -135,7 +135,8 @@ class MySQLIntrospector
             EXTRA,
             NUMERIC_PRECISION,
             NUMERIC_SCALE,
-            CHARACTER_MAXIMUM_LENGTH
+            CHARACTER_MAXIMUM_LENGTH,
+            COLUMN_COMMENT
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = ?
         ");
@@ -264,6 +265,25 @@ class MySQLIntrospector
             $data['NUMERIC_SCALE']
             ? (int) $data['NUMERIC_SCALE']
             : null;
+
+
+        $column->comment =
+            $data['COLUMN_COMMENT'] !== ''
+            ? $data['COLUMN_COMMENT']
+            : null;
+
+        if ($type === 'enum') {
+            preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $data['COLUMN_TYPE'], $matches);
+
+            $column->allowed = array_map(
+                fn($value) => stripcslashes($value),
+                $matches[1]
+            );
+        }
+
+        if (str_contains(strtolower($data['EXTRA']), 'on update current_timestamp')) {
+            $column->onUpdate = 'CURRENT_TIMESTAMP';
+        }
 
         return $column;
     }
