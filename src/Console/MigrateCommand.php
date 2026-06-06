@@ -14,7 +14,9 @@ use SchemaEngine\Generator\ModelGenerator;
 use SchemaEngine\Loader\SchemaLoader;
 use SchemaEngine\Metadata\SchemaDefinition;
 use SchemaEngine\Operations\Operation;
+use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Snapshot\SnapshotManager;
+use SchemaEngine\SQL\SQLGenerator;
 
 class MigrateCommand
 {
@@ -64,6 +66,8 @@ class MigrateCommand
         $desired =
             $this->loadDesiredSchema();
 
+        $this->handleSchemaSql();
+
         $this->handleGenerateModels($desired);
 
         $current =
@@ -74,6 +78,10 @@ class MigrateCommand
         $operations = $differ->diff(
             $current,
             $desired
+        );
+
+        $this->handleSqlExport(
+            $operations
         );
 
         $this->printWarnings(
@@ -258,13 +266,12 @@ class MigrateCommand
         $modelsConfig =
             $this->config['generator']['models'] ?? [];
 
-        if (
-            isset($modelsConfig['enabled'])
-            && !$modelsConfig['enabled']
-            && !$this->hasOption('generate-models')
-        ) {
-            return;
-        }
+        // if (
+        //     isset($modelsConfig['enabled'])
+        //     && !$modelsConfig['enabled']
+        // ) {
+        //     return;
+        // }
 
         $modelsConfig['path'] =
             $this->configLoader->path(
@@ -320,6 +327,11 @@ class MigrateCommand
         Migrator $migrator,
         array $operations
     ): void {
+        if (empty($operations)) {
+            echo "-- No schema changes detected.\n";
+            exit(0);
+        }
+
         $preview = $migrator->run(
             $operations,
             dryRun: true,
@@ -331,6 +343,62 @@ class MigrateCommand
         foreach ($preview as $sql) {
             echo $sql . "\n\n";
         }
+    }
+
+    /**
+     * @param Operation[] $operations
+     */
+    protected function handleSqlExport(
+        array $operations
+    ): void {
+
+        if (!$this->hasOption('sql')) {
+            return;
+        }
+
+        if (empty($operations)) {
+            echo "-- No schema changes detected.\n";
+            exit(0);
+        }
+
+        $migrator = new Migrator(
+            $this->pdo
+        );
+
+        $sqlList = $migrator->run(
+            $operations,
+            dryRun: true,
+            force: $this->isForce()
+        );
+
+        foreach ($sqlList as $sql) {
+            echo rtrim($sql, ';')
+                . ";\n\n";
+        }
+
+        exit(0);
+    }
+
+    protected function handleSchemaSql(): void
+    {
+        if (!$this->hasOption('schema-sql')) {
+            return;
+        }
+
+        $schema = $this->loadDesiredSchema();
+
+        $generator = new SQLGenerator();
+
+        foreach ($schema->tables as $table) {
+
+            echo $generator->generate(
+                new CreateTable($table)
+            );
+
+            echo "\n\n";
+        }
+
+        exit(0);
     }
 
     protected function confirmExecution(): void

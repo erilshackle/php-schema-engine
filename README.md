@@ -449,6 +449,74 @@ This table is managed internally by the engine and ignored during schema diffing
 
 ---
 
+## Exporting SQL
+
+PHP Schema Engine can generate SQL without executing migrations.
+
+### Export migration SQL (diff)
+
+Generate the SQL required to migrate the current database schema:
+
+```bash
+php bin/migrate --sql
+```
+
+Example:
+
+```sql
+ALTER TABLE users
+ADD COLUMN phone VARCHAR(20);
+
+CREATE TABLE posts (...);
+```
+
+This command uses schema introspection and the diff engine.
+
+---
+
+### Export full schema SQL
+
+Generate SQL for the entire schema definition:
+
+```bash
+php bin/migrate --schema-sql
+```
+
+Example:
+
+```sql
+CREATE TABLE users (...);
+
+CREATE TABLE posts (...);
+```
+
+This command ignores the current database and generates SQL directly from `database/schema.php`.
+
+---
+
+### Save SQL to a file
+
+```bash
+bin/migrate --schema-sql > install.sql
+```
+
+or
+
+```bash
+bin/migrate --sql > migration.sql
+```
+
+$ notice not to use  **php** because __>__ stdout is not a tty
+
+This is useful for:
+
+* Manual deployments
+* Database reviews
+* Backup scripts
+* Installation packages
+* CI/CD pipelines
+
+
 ## Safety
 
 By default, destructive operations are blocked.

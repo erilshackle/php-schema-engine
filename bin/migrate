@@ -7,15 +7,17 @@ use SchemaEngine\Console\MigrateCommand;
 
 $options = getopt('', [
     'init',
-    'dry-run',
-    'fresh',
-    'force',
     'yes',
     'status',
+    'dry-run',
+    'force',
+    'fresh',
+    'clear-history',
     'rollback',
     'generate-models',
-    'clear-history',
     'trace',
+    'sql',
+    'schema-sql',
 ]);
 
 $command = new MigrateCommand();
