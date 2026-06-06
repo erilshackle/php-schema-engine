@@ -383,6 +383,20 @@ Generator configuration:
 
 ## CLI
 
+| Command             | Description                           |
+| ------------------- | ------------------------------------- |
+| `--init`            | Initialize a new project              |
+| `--yes`             | Don't ask for confirmation            |
+| `--dry-run`         | Preview pending changes               |
+| `--force`           | Execute dangerous SQL like delete     |
+| `--status`          | Show migration history                |
+| `--sql`             | Export SQL for pending schema changes |
+| `--schema-sql`      | Export SQL for the entire schema      |
+| `--rollback`        | Rollback the latest batch             |
+| `--fresh`           | Drop all tables                       |
+| `--clear-history`   | Clear histries                        |
+| `--generate-models` | Generate model classes                |
+
 Dry-run:
 
 ```bash
