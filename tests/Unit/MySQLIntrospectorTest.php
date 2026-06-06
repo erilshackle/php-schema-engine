@@ -8,6 +8,7 @@ class MySQLIntrospectorTest extends TestCase
 
     /**
      * test_can_read_database_schema
+     * @group integration
      * @return void
      */
     public function test_can_read_database_schema(): void
