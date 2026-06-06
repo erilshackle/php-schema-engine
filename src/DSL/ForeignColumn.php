@@ -229,14 +229,6 @@ class ForeignColumn
         );
     }
 
-    public function constrained(
-        ?string $table = null,
-        string $column = 'id',
-        ?string $name = null
-    ): ForeignKey {
-        return $this->references($table, $column, $name);
-    }
-
     /**
      * Get the underlying column builder.
      *

@@ -113,8 +113,12 @@ class TableDefinition
 
         if ($column->meta['primary'] ?? false) {
 
+            $name =
+                $column->meta['primary_name']
+                ?? 'primary';
+
             $index = new IndexDefinition(
-                'primary',
+                $name,
                 [$column->name]
             );
 
@@ -125,8 +129,12 @@ class TableDefinition
 
         if ($column->meta['unique'] ?? false) {
 
+            $name =
+                $column->meta['unique_name']
+                ?? "{$column->name}_unique";
+
             $index = new IndexDefinition(
-                "{$column->name}_unique",
+                $name,
                 [$column->name]
             );
 
@@ -137,8 +145,12 @@ class TableDefinition
 
         if ($column->meta['index'] ?? false) {
 
+            $name =
+                $column->meta['index_name']
+                ?? "{$column->name}_index";
+
             $index = new IndexDefinition(
-                "{$column->name}_index",
+                $name,
                 [$column->name]
             );
 
@@ -165,6 +177,11 @@ class TableDefinition
             'checks' => array_map(
                 fn($check) => $check->toArray(),
                 $this->checks
+            ),
+
+            'foreignKeys' => array_map(
+                fn($foreignKey) => $foreignKey->toArray(),
+                $this->foreignKeys
             ),
         ];
     }
@@ -198,6 +215,12 @@ class TableDefinition
         foreach ($data['checks'] ?? [] as $check) {
             $table->addCheck(
                 CheckDefinition::fromArray($check)
+            );
+        }
+
+        foreach ($data['foreignKeys'] ?? [] as $foreignKey) {
+            $table->addForeignKey(
+                ForeignKeyDefinition::fromArray($foreignKey)
             );
         }
 

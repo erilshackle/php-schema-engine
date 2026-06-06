@@ -9,6 +9,20 @@
             "email": "erilandocarvalho@gmail.com"
         }
     ],
+    "keywords": [
+        "php",
+        "database",
+        "schema",
+        "migration",
+        "migrations",
+        "schema-builder",
+        "mysql",
+        "mariadb",
+        "sqlite",
+        "dsl",
+        "sql-generator",
+        "introspection"
+    ],
     "autoload": {
         "psr-4": {
             "SchemaEngine\\": "src/"
