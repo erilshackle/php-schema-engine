@@ -218,7 +218,7 @@ class ForeignColumn
      * @return ForeignKey Fluent foreign key constraint builder.
      */
     public function references(
-        ?string $table,
+        ?string $table = null,
         string $column = 'id',
         ?string $name = null
     ): ForeignKey {

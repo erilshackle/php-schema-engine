@@ -85,6 +85,23 @@ class TableDefinition
         );
     }
 
+    public function renameIndex(
+        string $from,
+        string $to
+    ): void {
+        if (!isset($this->indexes[$from])) {
+            return;
+        }
+
+        $index = $this->indexes[$from];
+
+        unset($this->indexes[$from]);
+
+        $index->name = $to;
+
+        $this->indexes[$to] = $index;
+    }
+
     public function getForeignKey(
         string $name
     ): ?ForeignKeyDefinition {
