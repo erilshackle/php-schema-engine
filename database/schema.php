@@ -19,7 +19,7 @@ return function (Schema $schema) {
         $t->id();
 
         $t->foreign('user_id')
-            ->constrained()
+            ->references()
             ->cascadeOnDelete();
 
         $t->string('title');
