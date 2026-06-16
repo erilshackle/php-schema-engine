@@ -22,7 +22,7 @@ use SchemaEngine\SQL\Expression\Expression;
 
 class SQLiteGrammar
 {
-    public function compile(Operation $operation): string
+    public function compile(Operation $operation): string|array
     {
         return match (true) {
             $operation instanceof CreateTable =>
@@ -69,24 +69,37 @@ class SQLiteGrammar
     {
         $table = $operation->table;
 
-        $columns = [];
+        $definitions = [];
 
         foreach ($table->columns as $column) {
-            $columns[] = $this->compileColumn($column);
+            $definitions[] = $this->compileColumn($column, $table);
         }
+
+        $hasInlinePrimary =
+            $this->hasInlineAutoIncrementPrimaryKey($table);
 
         foreach ($table->indexes as $index) {
             if ($index->primary) {
-                $columns[] = $this->compilePrimaryKey($index);
+
+                if ($hasInlinePrimary) {
+                    continue;
+                }
+
+                $definitions[] = $this->compilePrimaryKey($index);
             }
         }
 
         foreach ($table->foreignKeys as $foreignKey) {
-            $columns[] = $this->compileForeignKey($foreignKey);
+            $definitions[] = $this->compileForeignKey($foreignKey);
+        }
+
+        foreach ($table->checks as $check) {
+            $definitions[] =
+                "CONSTRAINT `{$check->name}` CHECK ({$check->expression})";
         }
 
         $sql = "CREATE TABLE `{$table->name}` (\n";
-        $sql .= implode(",\n", $columns);
+        $sql .= implode(",\n", $definitions);
         $sql .= "\n)";
 
         $indexSql = [];
@@ -109,11 +122,15 @@ class SQLiteGrammar
         return $sql;
     }
 
-    protected function compileColumn(ColumnDefinition $column): string
-    {
+    protected function compileColumn(
+        ColumnDefinition $column,
+        ?TableDefinition $table = null
+    ): string {
+
         if (
-            $column->autoIncrement
-            && strtolower($column->name) === 'id'
+            $table
+            && $column->autoIncrement
+            && $this->isPrimaryColumn($table, $column->name)
         ) {
             return "`{$column->name}` INTEGER PRIMARY KEY AUTOINCREMENT";
         }
@@ -147,12 +164,17 @@ class SQLiteGrammar
             'double',
             'decimal' => 'REAL',
 
+            'tinyint',
             'boolean' => 'INTEGER',
 
             'json' => 'TEXT',
 
+            'date',
+            'time',
             'datetime',
             'timestamp' => 'TEXT',
+
+            'enum' => 'TEXT' . $this->compileEnumCheck($column),
 
             default => strtoupper($column->type),
         };
@@ -241,9 +263,27 @@ class SQLiteGrammar
         return (string) $value;
     }
 
+    protected function compileEnumCheck(
+        ColumnDefinition $column
+    ): string {
+        if (empty($column->allowed)) {
+            return '';
+        }
+
+        $values = implode(
+            ', ',
+            array_map(
+                fn($value) => "'" . str_replace("'", "''", $value) . "'",
+                $column->allowed
+            )
+        );
+
+        return " CHECK (`{$column->name}` IN ({$values}))";
+    }
+
     protected function compileRecreateTable(
         RecreateTable $operation
-    ): array {
+    ): string|array {
 
         $current = $operation->current;
         $desired = $operation->desired;
@@ -278,6 +318,12 @@ class SQLiteGrammar
             "ALTER TABLE `{$temporaryName}` RENAME TO `{$desired->name}`",
             'PRAGMA foreign_keys = ON',
         ];
+        // return "PRAGMA foreign_keys = OFF;
+        //     $createSql;
+        //     INSERT INTO `{$temporaryName}` ({$columnsSql}) SELECT {$columnsSql} FROM `{$current->name}`;
+        //     DROP TABLE `{$current->name}`;
+        //     ALTER TABLE `{$temporaryName}` RENAME TO `{$desired->name}`;
+        //     PRAGMA foreign_keys = ON;";
     }
 
     protected function sharedColumns(
@@ -295,5 +341,37 @@ class SQLiteGrammar
         }
 
         return $columns;
+    }
+
+    protected function isPrimaryColumn(
+        TableDefinition $table,
+        string $columnName
+    ): bool {
+        foreach ($table->indexes as $index) {
+            if (
+                $index->primary
+                && count($index->columns) === 1
+                && $index->columns[0] === $columnName
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function hasInlineAutoIncrementPrimaryKey(
+        TableDefinition $table
+    ): bool {
+        foreach ($table->columns as $column) {
+            if (
+                $column->autoIncrement
+                && strtolower($column->name) === 'id'
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -17,13 +17,14 @@ use SchemaEngine\Operations\Table\CreateTable;
 use SchemaEngine\Operations\Table\DropTable;
 use SchemaEngine\Operations\Index\AddIndex;
 use SchemaEngine\Operations\Index\DropIndex;
+use SchemaEngine\Operations\Table\RecreateTable;
 use SchemaEngine\SQL\Expression\Expression;
 
 class MySQLGrammar
 {
     public function compile(
         Operation $operation
-    ): string {
+    ): string|array {
 
         return match (true) {
 
@@ -65,6 +66,9 @@ class MySQLGrammar
 
             $operation instanceof DropIndex =>
             $this->compileDropIndex($operation),
+
+            $operation instanceof RecreateTable =>
+            $this->compileRecreateTable($operation),
 
             default => throw new RuntimeException(
                 'Unsupported operation: '
@@ -262,6 +266,80 @@ DEFAULT CHARSET=utf8mb4
 ";
     }
 
+    protected function compileRecreateTable(
+        RecreateTable $operation
+    ): array {
+
+        $current = $operation->current;
+        $desired = $operation->desired;
+
+        $temporaryName = "__schema_tmp_{$desired->name}";
+
+        $temporaryTable = clone $desired;
+        $temporaryTable->name = $temporaryName;
+
+        /*
+     * Important:
+     * Do not create foreign keys on the temporary table.
+     * MySQL/InnoDB can complain about duplicated constraint names
+     * while the original table still exists.
+     */
+        $foreignKeys = $temporaryTable->foreignKeys;
+        $temporaryTable->foreignKeys = [];
+
+        $sql = [];
+
+        $sql[] = 'SET FOREIGN_KEY_CHECKS=0';
+
+        $sql[] = $this->compileCreateTable(
+            new CreateTable($temporaryTable)
+        );
+
+        $copyColumns = $this->sharedColumns(
+            $current,
+            $desired
+        );
+
+        if (!empty($copyColumns)) {
+
+            $columnsSql = implode(
+                ', ',
+                array_map(
+                    fn($column) => "`{$column}`",
+                    $copyColumns
+                )
+            );
+
+            $sql[] = "
+INSERT INTO `{$temporaryName}` ({$columnsSql})
+SELECT {$columnsSql}
+FROM `{$current->name}`
+";
+        }
+
+        $sql[] = "
+DROP TABLE `{$current->name}`
+";
+
+        $sql[] = "
+RENAME TABLE `{$temporaryName}` TO `{$desired->name}`
+";
+
+        foreach ($foreignKeys as $foreignKey) {
+
+            $sql[] = $this->compileAddForeignKey(
+                new AddForeignKey(
+                    $desired->name,
+                    $foreignKey
+                )
+            );
+        }
+
+        $sql[] = 'SET FOREIGN_KEY_CHECKS=1';
+
+        return $sql;
+    }
+
     protected function compileChecks(
         array $checks
     ): array {
@@ -436,5 +514,22 @@ ADD {$foreignKey}";
         }
 
         return $sql;
+    }
+
+    protected function sharedColumns(
+        TableDefinition $current,
+        TableDefinition $desired
+    ): array {
+
+        $columns = [];
+
+        foreach ($desired->columns as $name => $column) {
+
+            if ($current->hasColumn($name)) {
+                $columns[] = $name;
+            }
+        }
+
+        return $columns;
     }
 }

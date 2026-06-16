@@ -39,46 +39,43 @@ class Migrator
 
         foreach ($operations as $operation) {
 
-            $this->guardOperation(
-                $operation,
-                $force
-            );
+            $this->guardOperation($operation, $force);
 
-            $sql = $this->generator
-                ->generate($operation);
+            $rollbackSql = $this->generator->reverse($operation);
 
-            $sqlList[] = $sql;
-        }
-
-        $rollbackSqlList = [];
-
-        foreach ($operations as $operation) {
-            $rollbackSqlList[] =
-                $this->generator->reverse($operation);
+            foreach ($this->generator->generate($operation) as $statement) {
+                $sqlList[] = [
+                    'sql' => $statement,
+                    'operation' => get_class($operation),
+                    'rollback' => implode(";\n", $rollbackSql),
+                ];
+            }
         }
 
         if ($dryRun) {
-            return $sqlList;
+            return array_column($sqlList, 'sql');
         }
 
         $batch = $this->repository->nextBatch();
 
-        foreach ($sqlList as $index => $sql) {
+        foreach ($sqlList as $item) {
 
-            $this->pdo->exec($sql);
+            $this->pdo->exec($item['sql']);
 
-            $operation = basename(str_replace('\\', '/', get_class($operations[$index])));
-            $this->repository->log($operation, $batch);
+            $this->repository->log(
+                $item['operation'],
+                $batch
+            );
 
             $this->repository->logOperation(
                 $batch,
-                get_class($operations[$index]),
-                $sql,
-                $rollbackSqlList[$index]
+                $item['operation'],
+                $item['sql'],
+                $item['rollback']
             );
         }
 
-        return $sqlList;
+        return array_column($sqlList, 'sql');
     }
 
 
