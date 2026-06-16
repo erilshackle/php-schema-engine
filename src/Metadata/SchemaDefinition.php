@@ -8,11 +8,18 @@ class SchemaDefinition
      * @var array<string, TableDefinition>
      */
     public array $tables = [];
+    public array $renamedColumns = [];
 
     public function addTable(
         TableDefinition $table
     ): void {
         $this->tables[$table->name] = $table;
+    }
+
+    public function addRenamedColumn(
+        RenameColumnDefinition $rename
+    ): void {
+        $this->renamedColumns[] = $rename;
     }
 
     public function getTable(

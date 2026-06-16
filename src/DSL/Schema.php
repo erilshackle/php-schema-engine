@@ -2,6 +2,7 @@
 
 namespace SchemaEngine\DSL;
 
+use SchemaEngine\Metadata\RenameColumnDefinition;
 use SchemaEngine\Metadata\SchemaDefinition;
 
 class Schema
@@ -30,6 +31,23 @@ class Schema
 
         $this->definition->addTable(
             $table->toDefinition()
+        );
+
+        return $this;
+    }
+
+    public function renameColumn(
+        string $table,
+        string $from,
+        string $to
+    ): static {
+
+        $this->definition->addRenamedColumn(
+            new RenameColumnDefinition(
+                $table,
+                $from,
+                $to
+            )
         );
 
         return $this;

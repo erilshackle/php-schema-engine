@@ -48,6 +48,14 @@ class SchemaDiffer
             $this->diffTables($current, $desired)
         );
 
+        $operations = array_merge(
+            $operations,
+            $this->diffRenamedColumns(
+                $current,
+                $desired
+            )
+        );
+
         // columns
         $operations = array_merge(
             $operations,
@@ -112,6 +120,7 @@ Destructive index changes require --force.'
 
         $operations = [];
 
+
         foreach ($desired->tables as $tableName => $desiredTable) {
 
             $currentTable = $current->getTable($tableName);
@@ -133,10 +142,17 @@ Destructive index changes require --force.'
 
             $usedDesired = $renameData['usedDesired'] ?? [];
 
+            $renamedFrom = $this->renamedFromColumns($desired, $tableName);
+            $renamedTo = $this->renamedToColumns($desired, $tableName);
+
             // colunas novas/modificadas
             foreach ($desiredTable->columns as $columnName => $desiredColumn) {
 
                 if (in_array($columnName, $usedDesired, true)) {
+                    continue;
+                }
+
+                if (in_array($columnName, $renamedTo, true)) {
                     continue;
                 }
 
@@ -178,6 +194,10 @@ Destructive index changes require --force.'
                     continue;
                 }
 
+                if (in_array($columnName, $renamedFrom, true)) {
+                    continue;
+                }
+
                 if (!$desiredTable->hasColumn($columnName)) {
 
                     $operations[] =
@@ -190,6 +210,32 @@ Destructive index changes require --force.'
         }
 
         return $operations;
+    }
+
+    protected function renamedFromColumns(
+        SchemaDefinition $schema,
+        string $table
+    ): array {
+        return array_map(
+            fn($rename) => $rename->from,
+            array_filter(
+                $schema->renamedColumns,
+                fn($rename) => $rename->table === $table
+            )
+        );
+    }
+
+    protected function renamedToColumns(
+        SchemaDefinition $schema,
+        string $table
+    ): array {
+        return array_map(
+            fn($rename) => $rename->to,
+            array_filter(
+                $schema->renamedColumns,
+                fn($rename) => $rename->table === $table
+            )
+        );
     }
 
     protected function diffIndexes(
@@ -306,6 +352,38 @@ Destructive index changes require --force.'
                         "Foreign key '{$foreignKeyName}' on table '{$tableName}' differs from desired schema and was ignored."
                     );
                 }
+            }
+        }
+
+        return $operations;
+    }
+
+    protected function diffRenamedColumns(
+        SchemaDefinition $current,
+        SchemaDefinition $desired
+    ): array {
+
+        $operations = [];
+
+        foreach ($desired->renamedColumns as $rename) {
+
+            $currentTable = $current->getTable($rename->table);
+            $desiredTable = $desired->getTable($rename->table);
+
+            if (!$currentTable || !$desiredTable) {
+                continue;
+            }
+
+            if (
+                $currentTable->hasColumn($rename->from)
+                && $desiredTable->hasColumn($rename->to)
+                && !$currentTable->hasColumn($rename->to)
+            ) {
+                $operations[] = new RenameColumn(
+                    $rename->table,
+                    $rename->from,
+                    $rename->to
+                );
             }
         }
 
