@@ -36,13 +36,7 @@ PHP Schema Engine lets you define your database structure using a clean PHP DSL,
 ## Installation
 
 ```bash
-composer require erilshackle/php-schema-engine
-```
-
-For local development:
-
-```bash
-composer install
+composer require eril/schema-engine
 ```
 
 ---
@@ -76,7 +70,9 @@ Generated config example:
 return [
 
     // Schema file path
-    'schema' => '/database/schema.php',
+    'schema' => 'database/schema.php',
+
+    'bootstrap' => 'bootstrap.php',
 
     // Database connection configuration
     'database' => [
@@ -387,6 +383,20 @@ Generator configuration:
 
 ## CLI
 
+| Command             | Description                           |
+| ------------------- | ------------------------------------- |
+| `--init`            | Initialize a new project              |
+| `--yes`             | Don't ask for confirmation            |
+| `--dry-run`         | Preview pending changes               |
+| `--force`           | Execute dangerous SQL like delete     |
+| `--status`          | Show migration history                |
+| `--sql`             | Export SQL for pending schema changes |
+| `--schema-sql`      | Export SQL for the entire schema      |
+| `--rollback`        | Rollback the latest batch             |
+| `--fresh`           | Drop all tables                       |
+| `--clear-history`   | Clear histries                        |
+| `--generate-models` | Generate model classes                |
+
 Dry-run:
 
 ```bash
@@ -449,6 +459,74 @@ This table is managed internally by the engine and ignored during schema diffing
 
 ---
 
+## Exporting SQL
+
+PHP Schema Engine can generate SQL without executing migrations.
+
+### Export migration SQL (diff)
+
+Generate the SQL required to migrate the current database schema:
+
+```bash
+php bin/migrate --sql
+```
+
+Example:
+
+```sql
+ALTER TABLE users
+ADD COLUMN phone VARCHAR(20);
+
+CREATE TABLE posts (...);
+```
+
+This command uses schema introspection and the diff engine.
+
+---
+
+### Export full schema SQL
+
+Generate SQL for the entire schema definition:
+
+```bash
+php bin/migrate --schema-sql
+```
+
+Example:
+
+```sql
+CREATE TABLE users (...);
+
+CREATE TABLE posts (...);
+```
+
+This command ignores the current database and generates SQL directly from `database/schema.php`.
+
+---
+
+### Save SQL to a file
+
+```bash
+bin/migrate --schema-sql > install.sql
+```
+
+or
+
+```bash
+bin/migrate --sql > migration.sql
+```
+
+$ notice not to use  **php** because __>__ stdout is not a tty
+
+This is useful for:
+
+* Manual deployments
+* Database reviews
+* Backup scripts
+* Installation packages
+* CI/CD pipelines
+
+
 ## Safety
 
 By default, destructive operations are blocked.
@@ -492,7 +570,7 @@ Stack trace:
 
 ## Current Limitations
 
-PHP Schema Engine `0.1.0-alpha` is intentionally conservative.
+PHP Schema Engine `0.3.0` is intentionally conservative.
 
 Current V1 limitations:
 
@@ -552,14 +630,18 @@ The DSL is designed to stay expressive, while the internal architecture keeps me
 * migrate:reset
 * better CLI output
 * schema snapshots
-* explicit rename operations
 
 ### V0.3
 
-* advanced index diffing
 * foreign key diffing
-* table recreation mode
 * rollback support
+
+  
+### V0.4
+
+* advanced index diffing
+* table recreation mode
+* explicit rename operations
 
 ### V1.0
 

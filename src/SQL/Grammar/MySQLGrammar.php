@@ -95,6 +95,14 @@ class MySQLGrammar
             $sql .= " DEFAULT {$default}";
         }
 
+        if ($column->onUpdate !== null) {
+            $sql .= " ON UPDATE {$column->onUpdate}";
+        }
+
+        if ($column->comment !== null) {
+            $sql .= " COMMENT '" . addslashes($column->comment) . "'";
+        }
+
         if ($column->autoIncrement) {
             $sql .= ' AUTO_INCREMENT';
         }
@@ -132,6 +140,18 @@ class MySQLGrammar
             'double' => 'DOUBLE',
 
             'float' => 'FLOAT',
+
+            'tinyint' => 'TINYINT',
+            'date' => 'DATE',
+            'time' => 'TIME',
+
+            'enum' => 'ENUM(' . implode(
+                ', ',
+                array_map(
+                    fn($value) => "'" . addslashes($value) . "'",
+                    $column->allowed
+                )
+            ) . ')',
 
             'char' => 'CHAR('
                 . ($column->length ?? 1)
@@ -214,14 +234,21 @@ class MySQLGrammar
             $table->indexes
         );
 
+
+
         $foreignKeys = $this->compileForeignKeys(
             $table->foreignKeys
+        );
+
+        $checks = $this->compileChecks(
+            $table->checks
         );
 
         $definitions = array_merge(
             $columns,
             $indexes,
-            $foreignKeys
+            $foreignKeys,
+            $checks
         );
 
         $columnsSql = implode(",\n", $definitions);
@@ -233,6 +260,18 @@ CREATE TABLE `{$table->name}` (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 ";
+    }
+
+    protected function compileChecks(
+        array $checks
+    ): array {
+        $sql = [];
+
+        foreach ($checks as $check) {
+            $sql[] = "CONSTRAINT `{$check->name}` CHECK ({$check->expression})";
+        }
+
+        return $sql;
     }
 
     protected function compileAddColumn(

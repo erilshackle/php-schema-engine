@@ -126,6 +126,22 @@ class Column
         return $this;
     }
 
+    public function onUpdateRaw(
+        string $expression
+    ): static {
+        $this->definition->onUpdate = $expression;
+
+        return $this;
+    }
+
+    public function comment(
+        string $comment
+    ): static {
+        $this->definition->comment = $comment;
+
+        return $this;
+    }
+
     /**
      * Set the column length.
      *
@@ -210,6 +226,11 @@ class Column
         );
     }
 
+    public function onUpdateCurrentTimestamp(): static
+    {
+        return $this->onUpdateRaw('CURRENT_TIMESTAMP');
+    }
+
     //* META
 
     /**
@@ -220,12 +241,15 @@ class Column
      *
      * @return static
      */
-    public function unique(): static
-    {
+    public function unique(
+        ?string $name = null
+    ): static {
         $this->definition->meta['unique'] = true;
+        $this->definition->meta['unique_name'] =
+            $name ?? "{$this->definition->name}_unique";
 
         $index = new IndexDefinition(
-            "{$this->definition->name}_unique",
+            $this->definition->meta['unique_name'],
             [$this->definition->name]
         );
 
@@ -246,9 +270,11 @@ class Column
     public function primary(): static
     {
         $this->definition->meta['primary'] = true;
+        $this->definition->meta['primary_name'] =
+            $name ?? "primary";
 
         $index = new IndexDefinition(
-            'primary',
+            $this->definition->meta['primary_name'],
             [$this->definition->name]
         );
 
@@ -267,12 +293,14 @@ class Column
      *
      * @return static
      */
-    public function index(): static
+    public function index(?string $name = null): static
     {
         $this->definition->meta['index'] = true;
+        $this->definition->meta['index_name'] =
+            $name ?? "{$this->definition->name}_index";
 
         $index = new IndexDefinition(
-            "{$this->definition->name}_index",
+            $this->definition->meta['index_name'],
             [$this->definition->name]
         );
 

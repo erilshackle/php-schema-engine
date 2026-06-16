@@ -82,7 +82,9 @@ class ProjectInitializer
         return <<<'PHP'
 <?php
 
-return function ($schema) {
+use SchemaEngine\DSL\Schema;
+
+return function (Schema $schema) {
 
     $schema->table('users', function ($t) {
         $t->id();

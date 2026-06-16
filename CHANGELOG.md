@@ -4,6 +4,8 @@
 
 ### Added
 
+- SQL export command (`--sql`)
+- Full schema SQL export command (`--schema-sql`)
 - Added MySQL integration test coverage.
 - Added partial rollback infrastructure.
 - Added foreign key diffing for missing foreign keys.

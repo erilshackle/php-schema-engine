@@ -60,7 +60,7 @@ class SchemaDifferTest extends TestCase
             $t->id();
 
             $t->foreign('user_id')
-                ->constrained()
+                ->references()
                 ->cascadeOnDelete();
         });
 

@@ -7,6 +7,7 @@ class TableDefinition
     public string $name;
     public array $indexes = [];
     public array $foreignKeys = [];
+    public array $checks = [];
 
 
     /**
@@ -62,6 +63,11 @@ class TableDefinition
         );
     }
 
+    public function addCheck(
+        CheckDefinition $check
+    ): void {
+        $this->checks[$check->name] = $check;
+    }
 
     public function addForeignKey(
         ForeignKeyDefinition $foreignKey
@@ -77,6 +83,23 @@ class TableDefinition
         unset(
             $this->foreignKeys[$name]
         );
+    }
+
+    public function renameIndex(
+        string $from,
+        string $to
+    ): void {
+        if (!isset($this->indexes[$from])) {
+            return;
+        }
+
+        $index = $this->indexes[$from];
+
+        unset($this->indexes[$from]);
+
+        $index->name = $to;
+
+        $this->indexes[$to] = $index;
     }
 
     public function getForeignKey(
@@ -107,8 +130,12 @@ class TableDefinition
 
         if ($column->meta['primary'] ?? false) {
 
+            $name =
+                $column->meta['primary_name']
+                ?? 'primary';
+
             $index = new IndexDefinition(
-                'primary',
+                $name,
                 [$column->name]
             );
 
@@ -119,8 +146,12 @@ class TableDefinition
 
         if ($column->meta['unique'] ?? false) {
 
+            $name =
+                $column->meta['unique_name']
+                ?? "{$column->name}_unique";
+
             $index = new IndexDefinition(
-                "{$column->name}_unique",
+                $name,
                 [$column->name]
             );
 
@@ -131,8 +162,12 @@ class TableDefinition
 
         if ($column->meta['index'] ?? false) {
 
+            $name =
+                $column->meta['index_name']
+                ?? "{$column->name}_index";
+
             $index = new IndexDefinition(
-                "{$column->name}_index",
+                $name,
                 [$column->name]
             );
 
@@ -154,6 +189,16 @@ class TableDefinition
             'indexes' => array_map(
                 fn($index) => $index->toArray(),
                 $this->indexes
+            ),
+
+            'checks' => array_map(
+                fn($check) => $check->toArray(),
+                $this->checks
+            ),
+
+            'foreignKeys' => array_map(
+                fn($foreignKey) => $foreignKey->toArray(),
+                $this->foreignKeys
             ),
         ];
     }
@@ -181,6 +226,18 @@ class TableDefinition
                 IndexDefinition::fromArray(
                     $index
                 )
+            );
+        }
+
+        foreach ($data['checks'] ?? [] as $check) {
+            $table->addCheck(
+                CheckDefinition::fromArray($check)
+            );
+        }
+
+        foreach ($data['foreignKeys'] ?? [] as $foreignKey) {
+            $table->addForeignKey(
+                ForeignKeyDefinition::fromArray($foreignKey)
             );
         }
 

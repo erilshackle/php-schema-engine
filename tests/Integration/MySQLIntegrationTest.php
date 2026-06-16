@@ -71,7 +71,7 @@ class MySQLIntegrationTest extends TestCase
                 $t->id();
 
                 $t->foreign('user_id')
-                    ->constrained()
+                    ->references('users')
                     ->cascadeOnDelete();
 
                 $t->string('title');

@@ -17,10 +17,13 @@ class ColumnComparator
             && $a->nullable === $b->nullable
             && $a->autoIncrement === $b->autoIncrement
             && $this->normalizeDefault($a->default)
-                === $this->normalizeDefault($b->default)
+            === $this->normalizeDefault($b->default)
             && $this->normalizeLength($a) === $this->normalizeLength($b)
             && $this->normalizePrecision($a) === $this->normalizePrecision($b)
             && $this->normalizeScale($a) === $this->normalizeScale($b)
+            && $this->normalizeComment($a->comment) === $this->normalizeComment($b->comment)
+            && $this->normalizeOnUpdate($a->onUpdate) === $this->normalizeOnUpdate($b->onUpdate)
+            && $a->allowed === $b->allowed
         );
     }
 
@@ -91,5 +94,27 @@ class ColumnComparator
         }
 
         return $column->scale;
+    }
+
+    protected function normalizeComment(
+        ?string $comment
+    ): ?string {
+        return $comment === '' ? null : $comment;
+    }
+
+    protected function normalizeOnUpdate(
+        ?string $value
+    ): ?string {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = strtolower(trim($value));
+
+        if ($value === 'current_timestamp()') {
+            return 'current_timestamp';
+        }
+
+        return $value;
     }
 }
