@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 use SchemaEngine\Database\Introspection\MySQLIntrospector;
 use SchemaEngine\Diff\SchemaDiffer;
 use SchemaEngine\DSL\Schema;
+use SchemaEngine\DSL\Table;
 use SchemaEngine\Execution\Migrator;
 use SchemaEngine\Metadata\SchemaDefinition;
 
@@ -127,11 +128,11 @@ class MySQLIntegrationTest extends TestCase
                 $t->string('email')->unique();
             });
 
-            $schema->table('posts', function ($t) {
+            $schema->table('posts', function (Table $t) {
                 $t->id();
 
                 $t->foreign('user_id')
-                    ->constrained()
+                    ->references()
                     ->cascadeOnDelete();
 
                 $t->string('title');
@@ -223,7 +224,7 @@ class MySQLIntegrationTest extends TestCase
                 $t->id();
 
                 $t->foreign('user_id')
-                    ->constrained()
+                    ->references()
                     ->cascadeOnDelete();
 
                 $t->string('title');

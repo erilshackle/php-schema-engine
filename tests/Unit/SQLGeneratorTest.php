@@ -23,7 +23,7 @@ class SQLGeneratorTest extends TestCase
 
         $generator = new SQLGenerator();
 
-        $sql = $generator->generate(
+        [$sql] = $generator->generate(
             $operation
         );
 

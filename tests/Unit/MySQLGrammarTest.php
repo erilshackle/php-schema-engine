@@ -25,7 +25,7 @@ class MySQLGrammarTest extends TestCase
             ->toDefinition()
             ->getTable('posts');
 
-        $sql = (new SQLGenerator())->generate(
+        [$sql] = (new SQLGenerator())->generate(
             new CreateTable($posts)
         );
 
